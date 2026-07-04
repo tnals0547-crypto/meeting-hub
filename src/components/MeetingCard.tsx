@@ -1,0 +1,68 @@
+import type { Meeting } from '@/types/meeting'
+import StatusBadge from '@/components/common/StatusBadge'
+import Button from '@/components/common/Button'
+
+interface MeetingCardProps {
+  meeting: Meeting
+}
+
+const actionConfig: Record<
+  string,
+  { description: string; cta: string; href: (id: string) => string }
+> = {
+  pending: {
+    description: '아직 참석자에게 응답 요청을 보내지 않았습니다.',
+    cta: '참석 요청 보내기',
+    href: (id) => `/meetings/${id}`,
+  },
+  response_collecting: {
+    description: '아직 일부 참석자의 응답이 도착하지 않았습니다.',
+    cta: '미응답자 확인하기',
+    href: (id) => `/meetings/${id}`,
+  },
+  response_complete: {
+    description: '필수 참석자가 불참하여 대체 참석자 지정이 필요합니다.',
+    cta: '대체 참석자 지정하기',
+    href: (id) => `/meetings/${id}`,
+  },
+  confirmed: {
+    description: '회의가 확정되었습니다.',
+    cta: '확정 정보 보기',
+    href: (id) => `/meetings/${id}`,
+  },
+}
+
+function formatDate(dateString: string) {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('ko-KR', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  })
+}
+
+export default function MeetingCard({ meeting }: MeetingCardProps) {
+  const action = actionConfig[meeting.status] ?? actionConfig.pending
+
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-6">
+      <h3 className="text-lg font-semibold text-gray-900">{meeting.title}</h3>
+
+      <p className="mt-1 text-sm text-gray-500">
+        {formatDate(meeting.createdAt)} · {meeting.location}
+      </p>
+
+      <div className="mt-3">
+        <StatusBadge status={meeting.status} />
+      </div>
+
+      <p className="mt-3 text-sm leading-relaxed text-gray-600">
+        {action.description}
+      </p>
+
+      <div className="mt-4">
+        <Button href={action.href(meeting.id)}>{action.cta}</Button>
+      </div>
+    </div>
+  )
+}
