@@ -18,6 +18,17 @@ export interface Participant {
   isRequired: boolean
 }
 
+export type AvailabilityStatus = 'available' | 'in_meeting' | 'focused' | 'on_leave'
+
+export interface ReplacementCandidate {
+  id: string
+  name: string
+  department: string
+  role: string
+  rationale: string
+  availability: AvailabilityStatus
+}
+
 export interface Meeting {
   id: string
   title: string
@@ -29,4 +40,5 @@ export interface Meeting {
   requiredAttendanceRate: number
   status: MeetingStatus
   confirmedTimeSlot: TimeSlot | null
+  replacementCandidates?: ReplacementCandidate[]
 }
