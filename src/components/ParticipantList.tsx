@@ -21,36 +21,39 @@ const responseLabel: Record<string, { label: string; className: string }> = {
 
 export default function ParticipantList({ participants }: ParticipantListProps) {
   return (
-    <ul className="divide-y divide-gray-100">
+    <div className="flex flex-col gap-2">
       {participants.map((p) => {
         const response = responseLabel[p.responseStatus]
 
         return (
-          <li key={p.id} className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-sm font-medium text-gray-900 truncate">
-                {p.name}
-              </span>
-              {p.isRequired && (
-                <span className="shrink-0 rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-600">
-                  필수
+          <div
+            key={p.id}
+            className="flex items-center justify-between rounded-xl bg-white px-4 py-3"
+          >
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-900 truncate">
+                  {p.name}
                 </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-gray-400 hidden sm:inline">
+                {p.isRequired && (
+                  <span className="shrink-0 rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-600">
+                    필수
+                  </span>
+                )}
+              </div>
+              <span className="text-xs text-gray-400 truncate">
                 {p.department} · {p.role}
               </span>
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${response.className}`}
-              >
-                {response.label}
-              </span>
             </div>
-          </li>
+
+            <span
+              className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${response.className}`}
+            >
+              {response.label}
+            </span>
+          </div>
         )
       })}
-    </ul>
+    </div>
   )
 }

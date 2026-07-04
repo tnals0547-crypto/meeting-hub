@@ -28,15 +28,15 @@ function getReason(meeting: Meeting): string {
   )
 
   if (pendingParticipants.length > 0 && !meeting.participants.some((p) => p.responseStatus !== 'pending')) {
-    return '아직 참석자에게 응답 요청을 보내지 않았습니다. 먼저 참석 요청을 보내주세요.'
+    return `참석자 ${meeting.participants.length}명에게 아직 응답 요청을 보내지 않았어요. 요청을 보내면 참석자들이 가능한 시간을 알려줄 거예요.`
   }
 
   if (pendingParticipants.length > 0) {
-    return `아직 ${pendingParticipants.length}명의 참석자가 응답하지 않았습니다. 모든 응답이 모여야 다음 단계를 진행할 수 있습니다.`
+    return `참석자 ${pendingParticipants.length}명이 아직 응답하지 않았어요. 모든 응답이 모여야 회의 확정 여부를 판단할 수 있습니다.`
   }
 
   if (declinedRequired) {
-    return `모든 참석자가 응답을 완료했지만, 필수 참석자(${declinedRequired.name})가 불참하여 회의를 확정할 수 없습니다.`
+    return `${declinedRequired.name}(${declinedRequired.department} · ${declinedRequired.role})님은 필수 참석자예요. 대체 참석자가 지정되어야 회의를 확정할 수 있습니다.`
   }
 
   return '회의 확정을 위해 필요한 조건을 확인해주세요.'
@@ -100,7 +100,7 @@ export default async function MeetingProgressPage({
 
   return (
     <div className="flex flex-col items-center bg-zinc-50 min-h-full">
-      <main className="flex w-full max-w-xl flex-col px-6 py-10">
+      <main className="flex w-full max-w-xl flex-col px-6 py-6">
         <Link
           href="/"
           className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-6"
@@ -127,7 +127,7 @@ export default async function MeetingProgressPage({
         </section>
 
         <div className="mt-6">
-          <Button href={cta.href}>{cta.text}</Button>
+          <Button href={cta.href} className="w-full">{cta.text}</Button>
           {nextStepHint && (
             <p className="mt-2 text-xs text-gray-400">{nextStepHint}</p>
           )}
@@ -166,22 +166,20 @@ export default async function MeetingProgressPage({
           </div>
         </section>
 
-        <section className="mt-8 border-t border-gray-100 pt-6">
-          <h2 className="text-sm font-semibold text-gray-900">회의 정보</h2>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div className="flex">
-              <dt className="w-16 text-gray-400">주최자</dt>
-              <dd className="text-gray-900">{meeting.organizerName}</dd>
+        <section className="mt-8 border-t border-gray-100 pt-5">
+          <h2 className="text-xs font-medium text-gray-400">회의 정보</h2>
+          <dl className="mt-2 space-y-1 text-xs text-gray-400">
+            <div className="flex gap-1">
+              <dt>주최자</dt>
+              <dd>{meeting.organizerName}</dd>
             </div>
-            <div className="flex">
-              <dt className="w-16 text-gray-400">장소</dt>
-              <dd className="text-gray-900">{meeting.location}</dd>
+            <div className="flex gap-1">
+              <dt>장소</dt>
+              <dd>{meeting.location}</dd>
             </div>
-            <div className="flex">
-              <dt className="w-16 text-gray-400">생성일</dt>
-              <dd className="text-gray-900">
-                {formatDate(meeting.createdAt)}
-              </dd>
+            <div className="flex gap-1">
+              <dt>생성일</dt>
+              <dd>{formatDate(meeting.createdAt)}</dd>
             </div>
           </dl>
         </section>

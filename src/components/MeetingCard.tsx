@@ -45,23 +45,26 @@ export default function MeetingCard({ meeting }: MeetingCardProps) {
   const action = actionConfig[meeting.status] ?? actionConfig.pending
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6">
-      <h3 className="text-lg font-semibold text-gray-900">{meeting.title}</h3>
+    <div className="rounded-2xl border border-gray-100 bg-white p-5 transition-shadow hover:shadow-md hover:border-gray-200">
+      <h3 className="text-base font-semibold text-gray-900">{meeting.title}</h3>
 
       <p className="mt-1 text-sm text-gray-500">
         {formatDate(meeting.createdAt)} · {meeting.location}
       </p>
 
-      <div className="mt-3">
+      <div className="mt-2">
         <StatusBadge status={meeting.status} />
       </div>
 
-      <p className="mt-3 text-sm leading-relaxed text-gray-600">
+      <p className="mt-2 text-sm leading-snug text-gray-600">
         {action.description}
       </p>
 
-      <div className="mt-4">
-        <Button href={action.href(meeting.id)}>{action.cta}</Button>
+      <div className="mt-3">
+        <Button href={action.href(meeting.id)} className="w-full justify-between">
+          <span>{action.cta}</span>
+          <span className="text-lg leading-none">→</span>
+        </Button>
       </div>
     </div>
   )

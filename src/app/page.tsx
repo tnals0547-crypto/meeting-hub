@@ -15,7 +15,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center bg-zinc-50 min-h-full">
-      <main className="flex w-full max-w-xl flex-col px-6 py-10">
+      <main className="flex w-full max-w-xl flex-col px-6 py-6">
         <h1 className="text-2xl font-bold text-gray-900">Meeting Hub</h1>
         <p className="mt-1 text-lg font-semibold text-gray-900">
           오늘 처리해야 할 회의
@@ -24,7 +24,7 @@ export default function Home() {
           우선 처리해야 하는 회의를 확인하세요.
         </p>
 
-        <div className="mt-8 flex flex-col gap-4">
+        <div className="mt-6 flex flex-col gap-3">
           {sorted.map((meeting) => (
             <MeetingCard key={meeting.id} meeting={meeting} />
           ))}

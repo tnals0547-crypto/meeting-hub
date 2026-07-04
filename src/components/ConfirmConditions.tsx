@@ -68,9 +68,9 @@ export default function ConfirmConditions({ meeting }: ConfirmConditionsProps) {
         <span className="text-2xl font-bold text-gray-900">{percent}%</span>
       </div>
 
-      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+      <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-gray-200">
         <div
-          className="h-full rounded-full bg-black transition-all"
+          className="h-full rounded-full bg-gradient-to-r from-gray-800 to-black transition-all"
           style={{ width: `${percent}%` }}
         />
       </div>
