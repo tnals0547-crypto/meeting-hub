@@ -168,7 +168,7 @@ export const meetings: Meeting[] = [
         name: '김하준',
         department: '프론트엔드',
         role: '개발자',
-        rationale: '박프론트님과 같은 팀, 같은 역할입니다. 디자인 시스템 프로젝트 참여 경험이 있어 바로 적응할 수 있습니다.',
+        rationale: ['같은 팀', '같은 역할', '디자인 시스템 프로젝트 경험'],
         availability: 'available',
       },
       {
@@ -176,7 +176,7 @@ export const meetings: Meeting[] = [
         name: '이서연',
         department: '프론트엔드',
         role: '개발자',
-        rationale: '박프론트님과 같은 팀, 같은 역할입니다.',
+        rationale: ['같은 팀', '같은 역할'],
         availability: 'in_meeting',
       },
       {
@@ -184,7 +184,7 @@ export const meetings: Meeting[] = [
         name: '최민재',
         department: '프로덕트 디자인',
         role: '디자이너',
-        rationale: '같은 디자인 시스템 파트에서 유사한 업무 경험이 있습니다.',
+        rationale: ['같은 디자인 시스템 파트', '유사 업무 경험'],
         availability: 'focused',
       },
     ],

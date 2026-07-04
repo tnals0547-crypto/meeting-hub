@@ -15,15 +15,12 @@ const AVAILABILITY: Record<AvailabilityStatus, { icon: string; label: string }> 
   on_leave: { icon: '🔴', label: '연차' },
 }
 
-const STEPS = ['후보 선택', '요청 확인', '요청 완료']
+const STEPS = ['팀원 선택', '요청 확인', '요청 완료']
 
 function ProblemSection({ meeting }: { meeting: Meeting }) {
   const declinedRequired = meeting.participants.find(
     (p) => p.isRequired && p.responseStatus === 'declined',
   )
-  const approved = meeting.participants.filter(
-    (p) => p.responseStatus === 'approved',
-  ).length
 
   return (
     <section className="rounded-xl border border-red-100 bg-red-50 p-5">
@@ -36,15 +33,57 @@ function ProblemSection({ meeting }: { meeting: Meeting }) {
           {declinedRequired.role})님이 필수 참석자지만 불참했어요.
         </p>
       )}
-      <p className="mt-1 text-sm leading-relaxed text-gray-600">
-        대체 참석자 1명만 지정하면 참석률{' '}
-        <span className="font-semibold text-gray-900">
-          {approved + 1}/{meeting.participants.length}명 (
-          {Math.round(((approved + 1) / meeting.participants.length) * 100)}%)
-        </span>
-        로 회의를 확정할 수 있어요.
-      </p>
     </section>
+  )
+}
+
+function SummaryCard({ meeting }: { meeting: Meeting }) {
+  const approved = meeting.participants.filter(
+    (p) => p.responseStatus === 'approved',
+  ).length
+  const total = meeting.participants.length
+  const afterPercent = ((approved + 1) / total) * 100
+
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white p-5">
+      <p className="text-xs font-medium text-gray-500">이번 요청이 완료되면</p>
+
+      <div className="mt-3 flex items-end gap-6">
+        <div>
+          <p className="text-xs text-gray-400">현재</p>
+          <p className="mt-1 text-2xl font-bold text-gray-400">
+            {approved}
+            <span className="text-base font-normal text-gray-300">/{total}</span>
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center pb-1">
+          <span className="text-lg text-gray-300">→</span>
+        </div>
+
+        <div>
+          <p className="text-xs font-medium text-gray-900">완료 시</p>
+          <p className="mt-1 text-2xl font-bold text-gray-900">
+            {approved + 1}
+            <span className="text-base font-normal text-gray-500">/{total}</span>
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex h-2 gap-1">
+        <div className="h-full flex-1 rounded-full bg-green-400" />
+        <div className="h-full flex-1 rounded-full bg-gray-200" />
+        <div className="h-full flex-1 rounded-full bg-gray-200" />
+        <div className="h-full flex-1 rounded-full bg-gray-200" />
+      </div>
+
+      <div className="mt-1 flex items-center justify-between text-xs">
+        <span className="text-gray-400">{Math.round((approved / total) * 100)}%</span>
+        <span className="font-semibold text-gray-900">
+          {Math.round(afterPercent)}% ✅ 회의 확정 가능
+        </span>
+      </div>
+    </div>
   )
 }
 
@@ -69,28 +108,91 @@ function StepIndicator({ current }: { current: number }) {
   )
 }
 
-function CandidateCard({
+function PrimaryReason({ candidate }: { candidate: ReplacementCandidate }) {
+  const avail = AVAILABILITY[candidate.availability]
+  const hasProjectExp = candidate.rationale.some((r) => r.includes('프로젝트'))
+  const sameRole = candidate.rationale.some((r) => r.includes('역할'))
+
+  const lines = [
+    `${avail.icon} ${avail.label}`,
+  ]
+
+  if (sameRole) {
+    lines.push('같은 역할 경험이 있어 빠르게 적응할 수 있어요')
+  }
+
+  if (hasProjectExp) {
+    lines.push('해당 프로젝트 경험이 있어요')
+  }
+
+  return (
+    <p className="text-xs leading-relaxed text-gray-500">
+      {lines.join(' · ')}
+    </p>
+  )
+}
+
+function MemberCard({
   candidate,
-  isPrimary,
+  isSelected,
+  isOther,
+  onSelect,
   onRequest,
 }: {
   candidate: ReplacementCandidate
-  isPrimary: boolean
+  isSelected: boolean
+  isOther: boolean
+  onSelect: () => void
   onRequest: () => void
 }) {
   const avail = AVAILABILITY[candidate.availability]
 
+  if (isOther && !isSelected) {
+    return (
+      <button
+        onClick={onSelect}
+        className="w-full rounded-2xl border border-gray-100 bg-white p-5 text-left transition-colors hover:border-gray-300 hover:bg-gray-50 cursor-pointer"
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">
+              {candidate.name}
+            </h3>
+            <p className="text-sm text-gray-500">
+              {candidate.department} · {candidate.role}
+            </p>
+          </div>
+          <span className="shrink-0 text-xs text-gray-500">
+            {avail.icon} {avail.label}
+          </span>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+          {candidate.rationale.map((item) => (
+            <span key={item} className="text-xs text-gray-500">
+              ✓ {item}
+            </span>
+          ))}
+        </div>
+      </button>
+    )
+  }
+
   return (
-    <div
-      className={`rounded-2xl border bg-white p-5 ${
-        isPrimary ? 'border-black' : 'border-gray-100'
-      }`}
-    >
-      {isPrimary && (
-        <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600">
-          가장 먼저 요청할 후보
+    <div className="rounded-2xl border border-black bg-white p-5">
+      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600">
+        가장 먼저 요청할 팀원
+      </span>
+
+      {isSelected && (
+        <span className="ml-2 inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-600">
+          선택됨
         </span>
       )}
+
+      <div className="mt-2">
+        <PrimaryReason candidate={candidate} />
+      </div>
 
       <div className="mt-3 flex items-start justify-between">
         <div>
@@ -106,13 +208,17 @@ function CandidateCard({
         </span>
       </div>
 
-      <p className="mt-3 text-sm leading-relaxed text-gray-600">
-        {candidate.rationale}
-      </p>
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+        {candidate.rationale.map((item) => (
+          <span key={item} className="text-xs text-gray-500">
+            ✓ {item}
+          </span>
+        ))}
+      </div>
 
       <div className="mt-4">
         <Button onClick={onRequest} className="w-full justify-between">
-          <span>이 후보로 요청</span>
+          <span>{candidate.name}에게 요청</span>
           <span className="text-lg leading-none">→</span>
         </Button>
       </div>
@@ -146,7 +252,7 @@ function ConfirmationStep({
       </h3>
 
       <p className="mt-2 text-center text-sm text-gray-500">
-        요청이 수락되면 참석률{' '}
+        요청이 수락되면{' '}
         <span className="font-semibold text-gray-900">
           {approved + 1}/{meeting.participants.length}명
         </span>
@@ -219,7 +325,7 @@ export default function ReplacementPage() {
     return (
       <div className="flex flex-col items-center bg-zinc-50 min-h-full">
         <main className="flex w-full max-w-xl flex-col px-6 py-10">
-          <p className="text-sm text-gray-500">후보 정보를 찾을 수 없습니다.</p>
+          <p className="text-sm text-gray-500">팀원 정보를 찾을 수 없습니다.</p>
           <Link
             href="/"
             className="mt-4 text-sm font-medium text-gray-900 underline"
@@ -231,8 +337,9 @@ export default function ReplacementPage() {
     )
   }
 
-  function handleRequest(candidateId: string) {
-    setSelectedId(candidateId)
+  const currentPrimary = selected ?? primary
+
+  function handleRequest() {
     setStep(1)
   }
 
@@ -243,6 +350,10 @@ export default function ReplacementPage() {
   function handleBack() {
     setSelectedId(null)
     setStep(0)
+  }
+
+  function handleSelect(id: string) {
+    setSelectedId(id)
   }
 
   return (
@@ -269,33 +380,41 @@ export default function ReplacementPage() {
           <ProblemSection meeting={meeting} />
         </div>
 
+        <div className="mt-4">
+          <SummaryCard meeting={meeting} />
+        </div>
+
         {step === 0 && (
           <>
             <section className="mt-8">
               <h2 className="text-sm font-semibold text-gray-900">
-                가장 먼저 요청할 후보
+                가장 먼저 요청할 팀원
               </h2>
               <div className="mt-3">
-                <CandidateCard
-                  candidate={primary}
-                  isPrimary
-                  onRequest={() => handleRequest(primary.id)}
+                <MemberCard
+                  candidate={currentPrimary}
+                  isSelected={selected !== null}
+                  isOther={false}
+                  onSelect={() => handleSelect(currentPrimary.id)}
+                  onRequest={handleRequest}
                 />
               </div>
             </section>
 
             {others.length > 0 && (
-              <section className="mt-8">
+              <section className="mt-6">
                 <h2 className="text-sm font-semibold text-gray-900">
-                  다른 후보
+                  다른 팀원
                 </h2>
                 <div className="mt-3 flex flex-col gap-3">
                   {others.map((c) => (
-                    <CandidateCard
+                    <MemberCard
                       key={c.id}
                       candidate={c}
-                      isPrimary={false}
-                      onRequest={() => handleRequest(c.id)}
+                      isSelected={c.id === selectedId}
+                      isOther={true}
+                      onSelect={() => handleSelect(c.id)}
+                      onRequest={handleRequest}
                     />
                   ))}
                 </div>
@@ -304,10 +423,10 @@ export default function ReplacementPage() {
           </>
         )}
 
-        {step === 1 && selected && (
+        {step === 1 && currentPrimary && (
           <div className="mt-8">
             <ConfirmationStep
-              candidate={selected}
+              candidate={currentPrimary}
               meeting={meeting}
               onConfirm={handleConfirm}
               onBack={handleBack}
@@ -315,9 +434,9 @@ export default function ReplacementPage() {
           </div>
         )}
 
-        {step === 2 && selected && (
+        {step === 2 && currentPrimary && (
           <div className="mt-8">
-            <SuccessStep candidate={selected} meeting={meeting} />
+            <SuccessStep candidate={currentPrimary} meeting={meeting} />
           </div>
         )}
       </main>

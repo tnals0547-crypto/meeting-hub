@@ -25,7 +25,7 @@ export interface ReplacementCandidate {
   name: string
   department: string
   role: string
-  rationale: string
+  rationale: string[]
   availability: AvailabilityStatus
 }
 

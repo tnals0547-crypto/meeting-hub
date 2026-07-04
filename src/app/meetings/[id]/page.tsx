@@ -55,14 +55,14 @@ function getNextStepHint(status: MeetingStatus): string | null {
   }
 }
 
-function getCtaConfig(status: MeetingStatus) {
+function getCtaConfig(status: MeetingStatus, meetingId: string) {
   switch (status) {
     case 'pending':
       return { text: '참석 요청 보내기', href: '#' }
     case 'response_collecting':
       return { text: '미응답자에게 다시 요청하기', href: '#' }
     case 'response_complete':
-      return { text: '대체 참석자 지정하기', href: '#' }
+      return { text: '대체 참석자 지정하기', href: `/meetings/${meetingId}/replacement` }
     case 'confirmed':
       return { text: '확정 정보 보기', href: '#' }
   }
@@ -95,7 +95,7 @@ export default async function MeetingProgressPage({
       .length,
   }
 
-  const cta = getCtaConfig(meeting.status)
+  const cta = getCtaConfig(meeting.status, meeting.id)
   const nextStepHint = getNextStepHint(meeting.status)
 
   return (
