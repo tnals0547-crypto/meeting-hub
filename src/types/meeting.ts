@@ -1,5 +1,7 @@
 export type MeetingStatus = 'pending' | 'response_collecting' | 'response_complete' | 'confirmed'
 
+export type MeetingRole = 'organizer' | 'participant'
+
 export type ResponseStatus = 'pending' | 'approved' | 'declined'
 
 export interface TimeSlot {
@@ -56,6 +58,7 @@ export interface Meeting {
   location: string
   createdAt: string
   organizerName: string
+  myRole: MeetingRole
   participants: Participant[]
   requiredAttendanceRate: number
   status: MeetingStatus

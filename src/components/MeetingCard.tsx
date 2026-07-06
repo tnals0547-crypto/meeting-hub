@@ -1,6 +1,11 @@
-import type { Meeting } from '@/types/meeting'
+import type { Meeting, MeetingRole } from '@/types/meeting'
 import StatusBadge from '@/components/common/StatusBadge'
 import Button from '@/components/common/Button'
+
+const ROLE_CONFIG: Record<MeetingRole, { label: string; className: string }> = {
+  organizer: { label: '내가 주최', className: 'bg-blue-50 text-blue-600' },
+  participant: { label: '참석 요청', className: 'bg-gray-100 text-gray-600' },
+}
 
 interface MeetingCardProps {
   meeting: Meeting
@@ -55,8 +60,13 @@ export default function MeetingCard({ meeting, ctaOverride }: MeetingCardProps) 
         {formatDate(meeting.createdAt)} · {meeting.location}
       </p>
 
-      <div className="mt-2">
+      <div className="mt-2 flex items-center gap-2">
         <StatusBadge status={meeting.status} />
+        <span
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_CONFIG[meeting.myRole].className}`}
+        >
+          {ROLE_CONFIG[meeting.myRole].label}
+        </span>
       </div>
 
       <p className="mt-2 text-sm leading-snug text-gray-600">

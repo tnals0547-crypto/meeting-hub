@@ -108,6 +108,7 @@ export default function TimeSelectionPage() {
       location: '',
       createdAt: new Date().toISOString(),
       organizerName: '나',
+      myRole: 'organizer',
       participants,
       requiredAttendanceRate: 100,
       status: 'response_collecting' as MeetingStatus,
