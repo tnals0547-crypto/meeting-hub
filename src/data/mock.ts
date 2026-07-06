@@ -1,4 +1,15 @@
-import type { Meeting } from '@/types/meeting'
+import type { Meeting, TeamMember } from '@/types/meeting'
+
+export const teamMembers: TeamMember[] = [
+  { id: 'm1', name: '김철수', department: '프론트엔드', role: '개발자' },
+  { id: 'm2', name: '이영희', department: '프로덕트 디자인', role: '디자이너' },
+  { id: 'm3', name: '박민준', department: '백엔드', role: '개발자' },
+  { id: 'm4', name: '정서연', department: '프로덕트 매니지먼트', role: 'PM' },
+  { id: 'm5', name: '최동훈', department: '데이터', role: '데이터 분석가' },
+  { id: 'm6', name: '한지우', department: '마케팅', role: '마케터' },
+  { id: 'm7', name: '강수진', department: '프론트엔드', role: '개발자' },
+  { id: 'm8', name: '윤태호', department: '프로덕트 디자인', role: '디자이너' },
+]
 
 export const meetings: Meeting[] = [
   {

@@ -20,6 +20,15 @@ export interface Participant {
 
 export type AvailabilityStatus = 'available' | 'in_meeting' | 'focused' | 'on_leave'
 
+export type MeetingDuration = '30m' | '60m' | '90m' | '120m'
+
+export interface TeamMember {
+  id: string
+  name: string
+  department: string
+  role: string
+}
+
 export interface ReplacementCandidate {
   id: string
   name: string
