@@ -1,19 +1,8 @@
 import Link from 'next/link'
 import { meetings } from '@/data/mock'
-import MeetingCard from '@/components/MeetingCard'
-
-const statusPriority: Record<string, number> = {
-  response_complete: 0,
-  response_collecting: 1,
-  pending: 2,
-  confirmed: 3,
-}
+import MeetingList from '@/components/MeetingList'
 
 export default function Home() {
-  const sorted = [...meetings].sort(
-    (a, b) => (statusPriority[a.status] ?? 9) - (statusPriority[b.status] ?? 9),
-  )
-
   return (
     <div className="flex flex-col items-center bg-zinc-50 min-h-full">
       <main className="flex w-full max-w-xl flex-col px-6 py-6">
@@ -40,10 +29,8 @@ export default function Home() {
           </p>
         </Link>
 
-        <div className="mt-6 flex flex-col gap-3">
-          {sorted.map((meeting) => (
-            <MeetingCard key={meeting.id} meeting={meeting} />
-          ))}
+        <div className="mt-6">
+          <MeetingList initialMeetings={meetings} />
         </div>
       </main>
     </div>

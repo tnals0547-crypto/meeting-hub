@@ -7,6 +7,7 @@ import Button from '@/components/common/Button'
 import ProgressStepper from '@/components/ProgressStepper'
 import ParticipantList from '@/components/ParticipantList'
 import ConfirmConditions from '@/components/ConfirmConditions'
+import DynamicMeetingPage from './DynamicMeetingPage'
 
 function formatDate(dateString: string) {
   const date = new Date(dateString)
@@ -76,10 +77,18 @@ const summaryLabel: Record<string, { label: string; className: string }> = {
 
 export default async function MeetingProgressPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const { id } = await params
+  const { source } = await searchParams
+
+  if (source === 'new') {
+    return <DynamicMeetingPage id={id} />
+  }
+
   const meeting = meetings.find((m) => m.id === id)
 
   if (!meeting) {

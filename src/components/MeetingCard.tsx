@@ -4,6 +4,7 @@ import Button from '@/components/common/Button'
 
 interface MeetingCardProps {
   meeting: Meeting
+  ctaOverride?: { label: string; href: string }
 }
 
 const actionConfig: Record<
@@ -41,8 +42,10 @@ function formatDate(dateString: string) {
   })
 }
 
-export default function MeetingCard({ meeting }: MeetingCardProps) {
+export default function MeetingCard({ meeting, ctaOverride }: MeetingCardProps) {
   const action = actionConfig[meeting.status] ?? actionConfig.pending
+  const ctaLabel = ctaOverride?.label ?? action.cta
+  const ctaHref = ctaOverride?.href ?? action.href(meeting.id)
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 transition-shadow hover:shadow-md hover:border-gray-200">
@@ -61,8 +64,8 @@ export default function MeetingCard({ meeting }: MeetingCardProps) {
       </p>
 
       <div className="mt-3">
-        <Button href={action.href(meeting.id)} className="w-full justify-between">
-          <span>{action.cta}</span>
+        <Button href={ctaHref} className="w-full justify-between">
+          <span>{ctaLabel}</span>
           <span className="text-lg leading-none">→</span>
         </Button>
       </div>
