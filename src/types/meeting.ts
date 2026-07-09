@@ -1,4 +1,4 @@
-export type MeetingStatus = 'pending' | 'response_collecting' | 'response_complete' | 'confirmed'
+export type MeetingStatus = 'pending' | 'response_collecting' | 'response_complete' | 'confirmed' | 'completed'
 
 export type MeetingRole = 'organizer' | 'participant'
 
@@ -51,6 +51,20 @@ export interface ReplacementCandidate {
   availability: AvailabilityStatus
 }
 
+export interface MeetingRecord {
+  minutes: string[]
+  recording: {
+    title: string
+    duration: string
+    status: 'available' | 'processing'
+  }
+  video: {
+    title: string
+    duration: string
+    status: 'available' | 'processing'
+  }
+}
+
 export interface Meeting {
   id: string
   title: string
@@ -64,4 +78,5 @@ export interface Meeting {
   status: MeetingStatus
   confirmedTimeSlot: TimeSlot | null
   replacementCandidates?: ReplacementCandidate[]
+  records?: MeetingRecord
 }

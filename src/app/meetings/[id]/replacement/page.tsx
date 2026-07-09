@@ -31,9 +31,9 @@ function ProblemSection({ meeting }: { meeting: Meeting }) {
   )
 
   return (
-    <section className="rounded-xl border border-amber-100 bg-amber-50 p-4">
+    <section className="rounded-xl border border-l-4 border-gray-200 border-l-warning bg-white p-4">
       <div className="flex items-start gap-3">
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100">
           <AlertCircle className="h-3.5 w-3.5 text-amber-700" />
         </div>
         <div>
@@ -86,7 +86,7 @@ function SummaryCard({ meeting }: { meeting: Meeting }) {
 
       <div className="mt-3 h-2 rounded-full bg-gray-200 overflow-hidden">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-gray-800 to-black transition-all"
+          className="h-full rounded-full bg-gray-900 transition-all"
           style={{ width: `${Math.min(afterPercent, 100)}%` }}
         />
       </div>
@@ -110,7 +110,7 @@ function StepIndicator({ current }: { current: number }) {
           <span
             className={`inline-flex h-6 items-center rounded-full px-2.5 text-caption font-medium ${
               i <= current
-                ? 'bg-brand-50 text-brand-600'
+                ? 'bg-gray-900 text-white'
                 : 'bg-gray-100 text-gray-400'
             }`}
           >
@@ -137,7 +137,7 @@ function SelectionRationale({ candidate }: { candidate: ReplacementCandidate }) 
       {candidate.rationale.map((r) => (
         <span key={r} className="inline-flex items-center gap-1">
           <span className="text-gray-300">·</span>
-          <Check className="h-3 w-3 text-green-500" />
+          <Check className="h-3 w-3 text-gray-400" />
           {r}
         </span>
       ))}
@@ -188,12 +188,12 @@ function MemberCard({
   return (
     <div className="rounded-xl border border-gray-900 bg-white p-5">
       <div className="flex items-center gap-2">
-        <span className="inline-flex h-6 items-center gap-1 rounded-full bg-blue-50 px-2.5 text-caption font-medium text-blue-600">
+        <span className="inline-flex h-6 items-center gap-1 rounded-full bg-gray-100 px-2.5 text-caption font-medium text-gray-700">
           <UserCheck className="h-3.5 w-3.5" />
           가장 먼저 요청할 팀원
         </span>
         {isSelected && (
-          <span className="inline-flex h-6 items-center gap-1 rounded-full bg-green-50 px-2.5 text-caption font-medium text-green-600">
+          <span className="inline-flex h-6 items-center gap-1 rounded-full bg-gray-100 px-2.5 text-caption font-medium text-gray-700">
             <Check className="h-3.5 w-3.5" />
             선택됨
           </span>
@@ -249,8 +249,8 @@ function ConfirmationStep({
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-6 text-center">
-      <div className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-50 mx-auto">
-        <Send className="h-7 w-7 text-blue-600" />
+      <div className="flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 mx-auto">
+        <Send className="h-7 w-7 text-gray-500" />
       </div>
 
       <h3 className="mt-5 text-heading-s font-semibold text-gray-900">
@@ -292,8 +292,8 @@ function SuccessStep({
   meeting: Meeting
 }) {
   return (
-    <div className="rounded-xl border border-green-100 bg-green-50 p-6 text-center">
-      <div className="flex items-center justify-center w-14 h-14 rounded-full bg-green-100 mx-auto">
+    <div className="rounded-xl border border-l-4 border-gray-200 border-l-success bg-white p-6 text-center">
+      <div className="flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 mx-auto">
         <CheckCircle className="h-7 w-7 text-green-600" />
       </div>
 
@@ -375,35 +375,6 @@ export default function ReplacementPage() {
     setError(null)
   }
 
-  const statusDot: Record<string, string> = {
-    pending: 'bg-blue-500',
-    response_collecting: 'bg-amber-500',
-    response_complete: 'bg-purple-500',
-    confirmed: 'bg-green-500',
-  }
-
-  const sidebar = (
-    <div className="hidden lg:block">
-      <h2 className="text-title font-semibold text-gray-900">내 회의</h2>
-      <nav className="mt-3 space-y-1">
-        {meetings.map((m) => (
-          <Link
-            key={m.id}
-            href={`/meetings/${m.id}`}
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-title transition-colors ${
-              m.id === id
-                ? 'bg-gray-100 font-medium text-gray-900'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${statusDot[m.status]}`} />
-            <span className="truncate">{m.title}</span>
-          </Link>
-        ))}
-      </nav>
-    </div>
-  )
-
   const otherCandidatesPanel = (
     <div className="hidden lg:flex lg:flex-col lg:gap-3">
       <h2 className="text-title font-semibold text-gray-900">다른 팀원</h2>
@@ -446,15 +417,15 @@ export default function ReplacementPage() {
   )
 
   return (
-    <div className="flex min-h-full flex-col items-center bg-gray-50">
+    <div className="flex min-h-full flex-col bg-gray-50">
       {step === 0 ? (
         <>
-          <div className="w-full max-w-7xl px-6 pt-6 pb-0">
+          <div className="w-full border-b border-gray-200 bg-white px-6 py-5">
             {headerContent}
           </div>
 
           {error && (
-            <div className="mt-4 w-full max-w-7xl px-6">
+            <div className="mt-4 w-full px-6">
               <ErrorState
                 title="요청을 보내지 못했습니다"
                 description={error}
@@ -463,7 +434,7 @@ export default function ReplacementPage() {
             </div>
           )}
 
-          <PageLayout sidebar={sidebar} right={otherCandidatesPanel}>
+          <PageLayout hideSidebar right={otherCandidatesPanel}>
             {/* Mobile */}
             <div className="lg:hidden">
               <div className="mt-6">
@@ -534,7 +505,7 @@ export default function ReplacementPage() {
         </>
       ) : (
         <>
-          <div className="w-full max-w-7xl px-6 pt-6 pb-0">
+          <div className="w-full border-b border-gray-200 bg-white px-6 py-5">
             {headerContent}
           </div>
 

@@ -104,9 +104,9 @@ export default function ConfirmConditions({ meeting }: ConfirmConditionsProps) {
             <span
               className={`flex items-center justify-center w-5 h-5 rounded-full shrink-0 ${
                 c.status === 'done'
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-gray-900 text-white'
                   : c.status === 'current'
-                    ? 'bg-brand-500 text-white'
+                    ? 'bg-gray-700 text-white'
                     : 'bg-gray-200 text-gray-400'
               }`}
             >
@@ -124,7 +124,7 @@ export default function ConfirmConditions({ meeting }: ConfirmConditionsProps) {
               {c.title}
             </span>
             {c.detail && (
-              <span className={`text-caption ${c.status === 'current' ? 'text-brand-600' : 'text-gray-500'}`}>
+              <span className="text-caption text-gray-500">
                 ({c.detail})
               </span>
             )}

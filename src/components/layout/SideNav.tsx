@@ -2,28 +2,16 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  Mail,
-  CalendarDays,
-  ClipboardList,
-  MessageSquare,
-  Plus,
-  PanelLeft,
-  CircleUserRound,
-} from 'lucide-react'
+import { Mail, CalendarDays, ClipboardList, MessageSquare } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { icon: Mail, label: '메일', href: '/' },
-  { icon: CalendarDays, label: '캘린더', href: '/calendar' },
-  { icon: ClipboardList, label: '회의', href: '/meetings' },
-  { icon: MessageSquare, label: '채팅', href: '/chat' },
+  { icon: Mail, label: 'Mail', href: '/' },
+  { icon: CalendarDays, label: 'Calendar', href: '/calendar' },
+  { icon: ClipboardList, label: 'Meetings', href: '/meetings' },
+  { icon: MessageSquare, label: 'Chat', href: '/chat' },
 ]
 
-export default function SideNav({
-  onWorkspaceToggle,
-}: {
-  onWorkspaceToggle: () => void
-}) {
+export default function SideNav() {
   const pathname = usePathname()
 
   const isActive = (href: string) => {
@@ -33,60 +21,31 @@ export default function SideNav({
   }
 
   return (
-    <nav className="fixed left-0 top-0 z-50 hidden h-full w-[72px] flex-col items-center border-r border-gray-200 bg-white py-4 lg:flex">
-      <Link
-        href="/"
-        className="flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold tracking-tight text-gray-900 transition-colors hover:bg-gray-100"
-        title="Relay"
-      >
-        R
-      </Link>
+    <nav className="hidden w-[72px] shrink-0 border-r border-gray-200 bg-white lg:flex lg:flex-col lg:items-center">
+      <div className="flex w-full flex-col items-center gap-3 py-4">
+        <Link href="/" className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-900 text-sm font-bold tracking-tight text-white">
+            R
+        </Link>
 
-      <div className="mt-3 h-px w-6 bg-gray-200" />
-
-      <Link
-        href="/meetings/new"
-        className="mt-3 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-white transition-colors hover:bg-brand-600"
-        title="새 회의"
-      >
-        <Plus className="h-5 w-5" />
-      </Link>
-
-      <div className="mt-3 h-px w-6 bg-gray-200" />
-
-      <div className="mt-4 flex flex-col items-center gap-1.5">
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.label}
             href={item.href}
-            className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
-              isActive(item.href)
-                ? 'bg-brand-50 text-gray-900'
-                : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
-            }`}
+            aria-label={item.label}
             title={item.label}
+            className={`relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+              isActive(item.href)
+                ? 'bg-gray-100 text-gray-900'
+                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+            }`}
           >
-            <item.icon className="h-5 w-5" />
+            {isActive(item.href) && (
+              <span className="absolute left-[-17px] top-2 h-6 w-0.5 rounded-full bg-brand-500" />
+            )}
+            <item.icon className="h-5 w-5 shrink-0" />
           </Link>
         ))}
       </div>
-
-      <div className="flex-1" />
-
-      <button
-        onClick={onWorkspaceToggle}
-        className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
-        title="Workspace"
-      >
-        <PanelLeft className="h-5 w-5" />
-      </button>
-
-      <button
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-gray-500 transition-colors hover:bg-gray-300"
-        title="내 프로필"
-      >
-        <CircleUserRound className="h-5 w-5" />
-      </button>
     </nav>
   )
 }

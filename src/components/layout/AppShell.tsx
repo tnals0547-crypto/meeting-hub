@@ -1,22 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import TopBar from './TopBar'
 import SideNav from './SideNav'
-import Workspace from './Workspace'
+import LNB from './LNB'
 import MobileBottomNav from './MobileBottomNav'
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const [workspaceOpen, setWorkspaceOpen] = useState(false)
-
   return (
-    <div className="flex min-h-full flex-col lg:flex-row">
-      <SideNav onWorkspaceToggle={() => setWorkspaceOpen((v) => !v)} />
+    <div className="flex h-full min-h-full flex-col bg-gray-50">
+      <TopBar />
 
-      <main className="flex min-w-0 flex-1 flex-col pb-16 lg:ml-[72px] lg:pb-0">
-        {children}
-      </main>
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <SideNav />
+        <LNB />
 
-      <Workspace isOpen={workspaceOpen} onClose={() => setWorkspaceOpen(false)} />
+        <main className="flex min-w-0 flex-1 flex-col overflow-auto bg-gray-50 pb-16 lg:pb-0">
+          {children}
+        </main>
+      </div>
 
       <MobileBottomNav />
     </div>

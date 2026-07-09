@@ -36,7 +36,7 @@ export default function ParticipantList({ participants }: ParticipantListProps) 
                   {p.name}
                 </span>
                 {p.isRequired && (
-                  <span className="shrink-0 inline-flex h-6 items-center rounded-full px-2 text-caption font-medium text-blue-600 bg-blue-50">
+                  <span className="shrink-0 inline-flex h-6 items-center rounded-full bg-gray-100 px-2 text-caption font-medium text-gray-700">
                     필수
                   </span>
                 )}

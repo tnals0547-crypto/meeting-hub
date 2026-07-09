@@ -50,9 +50,7 @@ export default function TimeSlotCard({
           <p className="text-body-sm text-gray-900">
             {totalMemberCount}명 중 {availableMemberIds.length}명 가능
           </p>
-          <p
-            className={`text-body-sm ${allRequiredAvailable ? 'text-green-600' : 'text-red-500'}`}
-          >
+          <p className="text-body-sm text-gray-600">
             필수 참석자{' '}
             {allRequiredAvailable
               ? '모두 가능'
@@ -102,9 +100,7 @@ export default function TimeSlotCard({
         <p className="text-sm font-medium text-gray-900">
           {availableMemberIds.length}/{totalMemberCount}명 가능
         </p>
-        <p
-          className={`text-xs ${allRequiredAvailable ? 'text-green-600' : 'text-red-400'}`}
-        >
+        <p className="text-xs text-gray-500">
           {allRequiredAvailable
             ? '필수 모두 가능'
             : `필수 ${requiredAvailableCount}/${requiredTotalCount}`}

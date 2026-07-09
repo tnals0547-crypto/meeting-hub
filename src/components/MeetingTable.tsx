@@ -11,6 +11,7 @@ interface MeetingTableProps {
 }
 
 function getActionLabel(meeting: Meeting): string {
+  if (meeting.status === 'completed') return '기록 보기'
   if (meeting.myRole === 'participant') {
     if (meeting.status === 'pending' || meeting.status === 'response_collecting') return '응답하기'
     if (meeting.status === 'confirmed') return '정보 보기'
@@ -26,7 +27,7 @@ function getActionLabel(meeting: Meeting): string {
 }
 
 function needsAction(meeting: Meeting): boolean {
-  if (meeting.status === 'confirmed') return false
+  if (meeting.status === 'confirmed' || meeting.status === 'completed') return false
   if (meeting.myRole === 'participant') {
     return meeting.status === 'pending' || meeting.status === 'response_collecting'
   }
@@ -48,7 +49,7 @@ export default function MeetingTable({
   onSelect,
 }: MeetingTableProps) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border-subtle bg-white">
+    <div className="overflow-hidden bg-white">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border-subtle bg-surface-subtle">
@@ -65,30 +66,33 @@ export default function MeetingTable({
             const urgent = needsAction(meeting)
             const responded = meeting.participants.filter((p) => p.responseStatus !== 'pending').length
             const total = meeting.participants.length
+            const scheduleLabel = meeting.status === 'completed' && meeting.confirmedTimeSlot
+              ? `${meeting.confirmedTimeSlot.date} ${meeting.confirmedTimeSlot.startTime}`
+              : formatShortDate(meeting.createdAt)
 
             return (
               <tr
                 key={meeting.id}
                 onClick={() => onSelect(meeting.id)}
                 className={`cursor-pointer border-b border-gray-50 transition-colors last:border-b-0 hover:bg-gray-50 ${
-                  isSelected ? 'bg-brand-50/40' : ''
+                  isSelected ? 'bg-gray-50' : ''
                 }`}
               >
                 <td className="w-1 p-0">
-                  <div className={`w-1 h-full min-h-[52px] ${urgent ? 'bg-brand-500' : 'bg-transparent'}`} />
+                  <div className={`w-1 h-full min-h-[52px] ${urgent ? 'bg-warning' : 'bg-transparent'}`} />
                 </td>
                 <td className="px-4 py-3.5">
                   <div className="flex flex-col">
                     <span className="text-title font-medium text-gray-900">{meeting.title}</span>
                     <span className="text-caption text-gray-500 mt-0.5">
-                      {responded}/{total} 응답 · {formatShortDate(meeting.createdAt)}
+                      {responded}/{total} 응답 · {scheduleLabel}
                     </span>
                   </div>
                 </td>
                 <td className="px-4 py-3.5">
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium ${
                     meeting.myRole === 'organizer'
-                      ? 'bg-brand-50 text-brand-700'
+                      ? 'bg-gray-100 text-gray-700'
                       : 'bg-gray-100 text-gray-600'
                   }`}>
                     {meeting.myRole === 'organizer' ? '주최자' : '참석자'}

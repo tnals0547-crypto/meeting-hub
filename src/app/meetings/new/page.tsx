@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CalendarDays, Clock, Users, ArrowRight, CheckCircle, XCircle, HelpCircle } from 'lucide-react'
+import { CalendarDays, Clock, Users, ArrowRight, CheckCircle, XCircle, HelpCircle, Plus, ChevronRight } from 'lucide-react'
 import { teamMembers } from '@/data/mock'
-import { generateTimeSlots, sortSlots } from '@/data/availability'
-import type { TeamMember, MeetingDuration, TimeSlotWithAvailability } from '@/types/meeting'
+import type { TeamMember, MeetingDuration } from '@/types/meeting'
 import Button from '@/components/common/Button'
 import MemberSelector from '@/components/MemberSelector'
 import PageLayout from '@/components/layout/PageLayout'
@@ -26,6 +25,25 @@ const DURATION_OPTIONS: { value: MeetingDuration; label: string }[] = [
   { value: '120m', label: '2시간' },
 ]
 
+const DURATION_LABEL: Record<MeetingDuration, string> = {
+  '30m': '30분',
+  '60m': '1시간',
+  '90m': '1시간 30분',
+  '120m': '2시간',
+}
+
+interface CandidateSlot {
+  date: string
+  dayLabel: string
+  startTime: string
+  endTime: string
+  availableCount: number
+  totalCount: number
+  pendingCount: number
+  unavailableCount: number
+  status: 'all_available' | 'partial' | 'replacement_needed'
+}
+
 function getTodayString() {
   const d = new Date()
   return d.toISOString().slice(0, 10)
@@ -43,7 +61,7 @@ function getDateLabel(dateStr: string) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${days[d.getDay()]})`
 }
 
-function formatTimeSlotDate(dateStr: string) {
+function formatDateShort(dateStr: string) {
   const d = new Date(dateStr + 'T00:00:00')
   const days = ['일', '월', '화', '수', '목', '금', '토']
   return `${d.getMonth() + 1}/${d.getDate()} (${days[d.getDay()]})`
@@ -52,70 +70,56 @@ function formatTimeSlotDate(dateStr: string) {
 const statusConfig: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
   all_available: {
     label: '전원 가능',
-    className: 'bg-green-50 text-green-700',
+    className: 'bg-green-50 text-green-700 ring-1 ring-green-200',
     icon: <CheckCircle className="h-3.5 w-3.5" />,
   },
   partial: {
-    label: '일부 조율 필요',
-    className: 'bg-amber-50 text-amber-700',
+    label: '일부 확인 필요',
+    className: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
     icon: <HelpCircle className="h-3.5 w-3.5" />,
   },
-  pending: {
-    label: '확인 필요',
-    className: 'bg-gray-100 text-gray-600',
-    icon: <Clock className="h-3.5 w-3.5" />,
+  replacement_needed: {
+    label: '대체 참석 필요',
+    className: 'bg-red-50 text-red-700 ring-1 ring-red-200',
+    icon: <XCircle className="h-3.5 w-3.5" />,
   },
 }
 
-function CandidateCard({ slot }: { slot: TimeSlotWithAvailability }) {
-  const { availableMemberIds, totalMemberCount, requiredAvailableCount, requiredTotalCount, allRequiredAvailable } = slot
-  const unavailableCount = totalMemberCount - availableMemberIds.length
-  const pendingCount = totalMemberCount - availableMemberIds.length
-
-  let status: 'all_available' | 'partial' | 'pending'
-  if (allRequiredAvailable && availableMemberIds.length === totalMemberCount) {
-    status = 'all_available'
-  } else if (availableMemberIds.length >= requiredAvailableCount) {
-    status = 'partial'
-  } else {
-    status = 'pending'
-  }
-
-  const cfg = statusConfig[status]
-
-  return (
-    <div className="rounded-[8px] border border-gray-200 bg-white p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-semibold text-gray-900">{formatTimeSlotDate(slot.date)}</p>
-          <p className="text-sm text-gray-600">{slot.startTime} ~ {slot.endTime}</p>
-        </div>
-        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium ${cfg.className}`}>
-          {cfg.icon}
-          {cfg.label}
-        </span>
-      </div>
-      <div className="mt-2 flex gap-3 text-2xs text-gray-500">
-        <span className="inline-flex items-center gap-1">
-          <Users className="h-3 w-3 text-gray-400" />
-          가능 {availableMemberIds.length}/{totalMemberCount}
-        </span>
-        {pendingCount > 0 && (
-          <span className="inline-flex items-center gap-1">
-            <HelpCircle className="h-3 w-3 text-amber-400" />
-            확인 {pendingCount}명
-          </span>
-        )}
-        {unavailableCount > 0 && (
-          <span className="inline-flex items-center gap-1">
-            <XCircle className="h-3 w-3 text-red-400" />
-            불가 {unavailableCount}명
-          </span>
-        )}
-      </div>
-    </div>
-  )
-}
+const MOCK_CANDIDATES: CandidateSlot[] = [
+  {
+    date: '2026-07-10',
+    dayLabel: formatDateShort('2026-07-10'),
+    startTime: '10:00',
+    endTime: '11:00',
+    availableCount: 4,
+    totalCount: 4,
+    pendingCount: 0,
+    unavailableCount: 0,
+    status: 'all_available',
+  },
+  {
+    date: '2026-07-11',
+    dayLabel: formatDateShort('2026-07-11'),
+    startTime: '14:00',
+    endTime: '15:00',
+    availableCount: 3,
+    totalCount: 4,
+    pendingCount: 1,
+    unavailableCount: 0,
+    status: 'partial',
+  },
+  {
+    date: '2026-07-13',
+    dayLabel: formatDateShort('2026-07-13'),
+    startTime: '09:00',
+    endTime: '10:00',
+    availableCount: 2,
+    totalCount: 4,
+    pendingCount: 1,
+    unavailableCount: 1,
+    status: 'replacement_needed',
+  },
+]
 
 export default function NewMeetingPage() {
   const router = useRouter()
@@ -128,6 +132,7 @@ export default function NewMeetingPage() {
   const [optionalMembers, setOptionalMembers] = useState<TeamMember[]>([])
   const [startDate, setStartDate] = useState(getTodayString())
   const [endDate, setEndDate] = useState(getWeekLaterString())
+  const [selectedCandidateIdx, setSelectedCandidateIdx] = useState<number | null>(1)
 
   function handleAddRequired(member: TeamMember) {
     if (requiredMembers.length + optionalMembers.length < 6) {
@@ -168,81 +173,199 @@ export default function NewMeetingPage() {
         new Date(startDate + 'T00:00:00').getTime()) /
         (1000 * 60 * 60 * 24),
     ) + 1
-  const isValid =
-    title.trim().length > 0 && totalMembers > 0 && startDate <= endDate
+  const isValid = title.trim().length > 0 && totalMembers > 0 && startDate <= endDate
 
-  const previewSlots = useMemo(() => {
-    if (totalMembers === 0) return []
-    try {
-      const requiredIds = requiredMembers.map((m) => m.id)
-      const optionalIds = optionalMembers.map((m) => m.id)
-      const slots = generateTimeSlots(startDate, endDate, duration, requiredIds, optionalIds)
-      const viable = slots.filter(
-        (s) => s.allRequiredAvailable || s.availableMemberIds.length >= requiredIds.length,
-      )
-      return sortSlots(viable).slice(0, 5)
-    } catch {
-      return []
-    }
-  }, [startDate, endDate, duration, requiredMembers, optionalMembers, totalMembers])
+  const selectedSlot = selectedCandidateIdx != null ? MOCK_CANDIDATES[selectedCandidateIdx] : null
+  const hasCandidate = totalMembers > 0 && selectedSlot != null
 
-  const candidatePanel = (
+  const ctaFlow = (() => {
+    if (totalMembers === 0) return { text: '팀원 추가하기', disabled: false, onClick: () => document.getElementById('member-selector')?.scrollIntoView({ behavior: 'smooth' }), icon: <Plus className="h-4 w-4" /> }
+    if (hasCandidate) return { text: '참석 요청 보내기', disabled: !isValid, onClick: handleSubmit, icon: <ArrowRight className="h-4 w-4" /> }
+    return { text: '가능한 시간 보기', disabled: !isValid, onClick: handleSubmit, icon: <ArrowRight className="h-4 w-4" /> }
+  })()
+
+  const summaryPanel = (
+    <div className="rounded-[8px] border border-gray-200 bg-white p-5">
+      <h3 className="text-title font-semibold text-gray-900">회의 요약</h3>
+
+      <dl className="mt-4 space-y-3">
+        <div className="flex justify-between text-title">
+          <dt className="text-gray-600">방식</dt>
+          <dd className="font-medium text-gray-900">{MEETING_TYPE_OPTIONS.find((o) => o.value === meetingType)?.label ?? ''}</dd>
+        </div>
+        <div className="flex justify-between text-title">
+          <dt className="text-gray-600">길이</dt>
+          <dd className="font-medium text-gray-900">{DURATION_LABEL[duration]}</dd>
+        </div>
+        <div className="flex justify-between text-title">
+          <dt className="text-gray-600">참석자</dt>
+          <dd className="font-medium text-gray-900">
+            {totalMembers > 0 ? (
+              <span>{requiredMembers.length > 0 ? `필수 ${requiredMembers.length}명` : ''}{optionalMembers.length > 0 ? ` · 선택 ${optionalMembers.length}명` : ''}</span>
+            ) : (
+              <span className="text-gray-400">0명</span>
+            )}
+          </dd>
+        </div>
+        <div className="flex justify-between text-title">
+          <dt className="text-gray-600">검토 기간</dt>
+          <dd className="font-medium text-gray-900">{daysDiff}일</dd>
+        </div>
+      </dl>
+
+      {selectedSlot && (
+        <>
+          <hr className="my-4 border-gray-100" />
+          <div className="space-y-3">
+            <p className="text-caption font-semibold text-gray-500 uppercase tracking-wider">선택한 후보 시간</p>
+            <div className="rounded-lg border border-l-4 border-gray-200 border-l-brand-500 bg-gray-50 p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{selectedSlot.dayLabel}</p>
+                  <p className="text-sm text-gray-600">{selectedSlot.startTime} ~ {selectedSlot.endTime} · {DURATION_LABEL[duration]}</p>
+                </div>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium ${statusConfig[selectedSlot.status].className}`}>
+                  {statusConfig[selectedSlot.status].icon}
+                  {statusConfig[selectedSlot.status].label}
+                </span>
+              </div>
+              <div className="mt-2 flex gap-3 text-2xs text-gray-500">
+                <span className="inline-flex items-center gap-1">
+                  <Users className="h-3 w-3 text-gray-400" />
+                  가능 {selectedSlot.availableCount}/{selectedSlot.totalCount}
+                </span>
+                {selectedSlot.pendingCount > 0 && (
+                  <span className="inline-flex items-center gap-1">
+                    <HelpCircle className="h-3 w-3 text-gray-400" />
+                    확인 {selectedSlot.pendingCount}명
+                  </span>
+                )}
+                {selectedSlot.unavailableCount > 0 && (
+                  <span className="inline-flex items-center gap-1">
+                    <XCircle className="h-3 w-3 text-gray-400" />
+                    불가 {selectedSlot.unavailableCount}명
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      <hr className="my-4 border-gray-100" />
+      <div className="flex items-center justify-between text-body-sm">
+        <span className="text-gray-600">진행 상태</span>
+        <span className="font-medium text-gray-900">
+          {totalMembers === 0 ? '정보 입력 중' : selectedSlot ? '후보 시간 선택됨' : '후보 시간 확인 필요'}
+        </span>
+      </div>
+
+      <div className="mt-4 hidden lg:block">
+        <Button onClick={ctaFlow.onClick} disabled={ctaFlow.disabled} className="w-full gap-2">
+          {ctaFlow.icon}
+          <span>{ctaFlow.text}</span>
+        </Button>
+      </div>
+    </div>
+  )
+
+  const candidatesSection = (
     <div className="rounded-[8px] border border-gray-200 bg-white p-5">
       <div className="flex items-center justify-between">
         <h3 className="text-title font-semibold text-gray-900">가능한 시간 후보</h3>
         {totalMembers > 0 && (
-          <span className="text-caption text-gray-400">{previewSlots.length}개</span>
+          <span className="text-caption text-gray-400">{MOCK_CANDIDATES.length}개</span>
         )}
       </div>
+
+      <p className="mt-1.5 text-body-sm text-gray-500">
+        {totalMembers > 0
+          ? '참석자들의 일정을 분석한 예상 후보 시간이에요. 원하는 시간을 선택하고 요청을 보내보세요.'
+          : '참석자를 추가하면 가능한 시간을 찾을 수 있어요.'}
+      </p>
 
       <div className="mt-4 space-y-2">
         {totalMembers === 0 ? (
-          <div className="flex flex-col items-center py-6 text-center">
-            <CalendarDays className="h-8 w-8 text-gray-300" />
-            <p className="mt-2 text-body-sm text-gray-500">
-              참석자를 추가하면 가능한 시간을 찾을 수 있어요
-            </p>
-          </div>
-        ) : previewSlots.length === 0 ? (
-          <div className="flex flex-col items-center py-6 text-center">
-            <XCircle className="h-8 w-8 text-gray-300" />
-            <p className="mt-2 text-body-sm text-gray-500">
-              현재 조건에서 가능한 시간이 없습니다. 기간이나 참석자를 조정해보세요.
-            </p>
+          <div className="flex flex-col items-center py-8 text-center">
+            <CalendarDays className="h-10 w-10 text-gray-300" />
+            <p className="mt-3 text-body-sm text-gray-500">참석자를 추가하면 가능한 시간을 찾을 수 있어요.</p>
+            <button
+              onClick={() => document.getElementById('member-selector')?.scrollIntoView({ behavior: 'smooth' })}
+              className="mt-3 inline-flex items-center gap-1 rounded-[8px] border border-gray-200 px-4 py-2 text-body-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <Plus className="h-4 w-4" />
+              팀원 추가하기
+            </button>
           </div>
         ) : (
-          previewSlots.map((slot, i) => (
-            <CandidateCard key={`${slot.date}-${slot.startTime}`} slot={slot} />
-          ))
+          MOCK_CANDIDATES.map((slot, i) => {
+            const isSelected = selectedCandidateIdx === i
+            const cfg = statusConfig[slot.status]
+            return (
+              <button
+                key={i}
+                onClick={() => setSelectedCandidateIdx(i)}
+                className={`w-full rounded-[8px] border p-4 text-left transition-all ${
+                  isSelected
+                    ? 'border-gray-900 bg-gray-50'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                      isSelected ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
+                    }`}>
+                      {isSelected && <CheckCircle className="h-4 w-4 text-white" />}
+                    </span>
+                    <div>
+                      <p className={`text-sm font-semibold ${isSelected ? 'text-gray-900' : 'text-gray-900'}`}>{slot.dayLabel}</p>
+                      <p className="text-sm text-gray-500">
+                        {slot.startTime} ~ {slot.endTime} · {DURATION_LABEL[duration]}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium ${cfg.className}`}>
+                    {cfg.icon}
+                    {cfg.label}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center gap-3 text-2xs text-gray-500">
+                  <span className="inline-flex items-center gap-1">
+                    <Users className="h-3 w-3 text-gray-400" />
+                    가능 {slot.availableCount}/{slot.totalCount}
+                  </span>
+                  {slot.pendingCount > 0 && (
+                    <span className="inline-flex items-center gap-1">
+                      <HelpCircle className="h-3 w-3 text-gray-400" />
+                      확인 {slot.pendingCount}명
+                    </span>
+                  )}
+                  {slot.unavailableCount > 0 && (
+                    <span className="inline-flex items-center gap-1">
+                      <XCircle className="h-3 w-3 text-gray-400" />
+                      불가 {slot.unavailableCount}명
+                    </span>
+                  )}
+                  {isSelected && (
+                    <span className="ml-auto inline-flex items-center gap-1 text-2xs font-medium text-gray-700">
+                      선택됨
+                      <ChevronRight className="h-3 w-3" />
+                    </span>
+                  )}
+                </div>
+              </button>
+            )
+          })
         )}
       </div>
-
-      {totalMembers > 0 && previewSlots.length > 0 && (
-        <>
-          <div className="mt-4 border-t border-gray-100 pt-4">
-            <div className="flex items-center justify-between text-title">
-              <span className="text-gray-600">검토 기간</span>
-              <span className="font-medium text-gray-900">{daysDiff}일</span>
-            </div>
-          </div>
-          <div className="mt-3">
-            <Button
-              onClick={handleSubmit}
-              disabled={!isValid}
-              className="w-full gap-2"
-            >
-              <span>가능한 시간 보기</span>
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </>
-      )}
     </div>
   )
 
   return (
-    <div className="flex min-h-full flex-col items-center bg-gray-50">
-      <div className="w-full max-w-7xl px-6 pt-6 pb-0">
+    <div className="flex min-h-full flex-col bg-gray-50">
+      <div className="w-full border-b border-gray-200 bg-white px-6 py-5">
         <Link
           href="/"
           className="inline-flex items-center gap-1 text-body-sm text-gray-600 hover:text-gray-900"
@@ -250,14 +373,15 @@ export default function NewMeetingPage() {
           ← 홈
         </Link>
 
-        <h1 className="mt-2 text-heading-s font-semibold text-gray-900">회의 일정 조율</h1>
+        <h1 className="mt-2 text-heading-s font-semibold text-gray-900">새 회의 만들기</h1>
+        <p className="mt-1.5 text-body-sm text-gray-500 max-w-xl">
+          참석자들의 일정을 확인해 모두가 가능한 시간을 찾고, 요청까지 한 번에 보낼 수 있어요.
+        </p>
       </div>
 
-      <PageLayout hideSidebar right={candidatePanel}>
+      <PageLayout hideSidebar right={summaryPanel}>
         <section className="rounded-[8px] border border-gray-100 bg-white p-5">
-          <label className="text-title font-semibold text-gray-900">
-            회의 제목
-          </label>
+          <label className="text-title font-semibold text-gray-900">회의 제목</label>
           <input
             type="text"
             value={title}
@@ -268,9 +392,7 @@ export default function NewMeetingPage() {
         </section>
 
         <section className="mt-3 rounded-[8px] border border-gray-100 bg-white p-5">
-          <label className="text-title font-semibold text-gray-900">
-            회의 설명
-          </label>
+          <label className="text-title font-semibold text-gray-900">회의 설명</label>
           <input
             type="text"
             value={description}
@@ -281,9 +403,7 @@ export default function NewMeetingPage() {
         </section>
 
         <section className="mt-3 rounded-[8px] border border-gray-100 bg-white p-5">
-          <label className="text-title font-semibold text-gray-900">
-            회의 방식
-          </label>
+          <label className="text-title font-semibold text-gray-900">회의 방식</label>
           <div className="mt-3 flex gap-3">
             {MEETING_TYPE_OPTIONS.map((opt) => (
               <button
@@ -302,9 +422,7 @@ export default function NewMeetingPage() {
         </section>
 
         <section className="mt-3 rounded-[8px] border border-gray-100 bg-white p-5">
-          <label className="text-title font-semibold text-gray-900">
-            회의 시간
-          </label>
+          <label className="text-title font-semibold text-gray-900">회의 시간</label>
           <div className="mt-3 grid grid-cols-4 gap-2">
             {DURATION_OPTIONS.map((opt) => (
               <button
@@ -322,7 +440,7 @@ export default function NewMeetingPage() {
           </div>
         </section>
 
-        <section className="mt-3 rounded-[8px] border border-gray-100 bg-white p-5">
+        <section id="member-selector" className="mt-3 rounded-[8px] border border-gray-100 bg-white p-5">
           <MemberSelector
             allMembers={teamMembers}
             requiredMembers={requiredMembers}
@@ -334,9 +452,7 @@ export default function NewMeetingPage() {
         </section>
 
         <section className="mt-3 rounded-[8px] border border-gray-100 bg-white p-5">
-          <label className="text-title font-semibold text-gray-900">
-            회의 가능 기간
-          </label>
+          <label className="text-title font-semibold text-gray-900">회의 가능 기간</label>
           <div className="mt-3 flex items-center gap-3">
             <div className="flex-1">
               <p className="text-caption text-gray-600">시작일</p>
@@ -359,18 +475,26 @@ export default function NewMeetingPage() {
             </div>
           </div>
           <p className="mt-2 text-body-sm text-gray-600">
-            {getDateLabel(startDate)} ~ {getDateLabel(endDate)} · 총 {daysDiff}
-            일
+            {getDateLabel(startDate)} ~ {getDateLabel(endDate)} · 총 {daysDiff}일
           </p>
         </section>
 
+        {/* Mobile: candidates + CTA */}
         <div className="mt-6 lg:hidden">
-          <Button onClick={handleSubmit} disabled={!isValid} className="w-full gap-2">
-            <span>가능한 시간 보기</span>
-            <ArrowRight className="h-4 w-4" />
-          </Button>
+          {candidatesSection}
+          <div className="mt-4">
+            <Button onClick={ctaFlow.onClick} disabled={ctaFlow.disabled} className="w-full gap-2">
+              {ctaFlow.icon}
+              <span>{ctaFlow.text}</span>
+            </Button>
+          </div>
         </div>
       </PageLayout>
+
+      {/* Desktop: candidate panel below main area */}
+      <div className="hidden w-full px-5 pb-5 lg:block">
+        {candidatesSection}
+      </div>
     </div>
   )
 }

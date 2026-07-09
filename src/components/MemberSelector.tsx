@@ -70,7 +70,7 @@ export default function MemberSelector({
                 <div className="flex gap-2">
                   <button
                     onClick={() => onAddRequired(member)}
-                    className="inline-flex h-7 items-center rounded-[8px] bg-blue-50 px-2.5 text-caption font-medium text-blue-600 transition-colors hover:bg-blue-100"
+                    className="inline-flex h-7 items-center rounded-[8px] bg-gray-900 px-2.5 text-caption font-medium text-white transition-colors hover:bg-gray-800"
                   >
                     필수로 추가
                   </button>
@@ -89,17 +89,17 @@ export default function MemberSelector({
 
       {requiredMembers.length > 0 && (
         <div className="mt-4">
-          <p className="text-title font-medium text-blue-600">필수 참석자</p>
+          <p className="text-title font-medium text-gray-700">필수 참석자</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {requiredMembers.map((member) => (
               <span
                 key={member.id}
-                className="inline-flex h-6 items-center gap-1 rounded-full bg-blue-50 px-2 text-caption font-medium text-blue-700"
+                className="inline-flex h-6 items-center gap-1 rounded-full bg-gray-100 px-2 text-caption font-medium text-gray-700"
               >
                 {member.name}
                 <button
                   onClick={() => onRemove(member)}
-                  className="inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-blue-100"
+                  className="inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-gray-200"
                 >
                   <X className="h-3 w-3" />
                 </button>

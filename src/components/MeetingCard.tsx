@@ -4,7 +4,7 @@ import Button from '@/components/common/Button'
 import { ArrowRight } from 'lucide-react'
 
 const ROLE_CONFIG: Record<MeetingRole, { label: string; className: string }> = {
-  organizer: { label: '내가 주최', className: 'bg-blue-50 text-blue-600' },
+  organizer: { label: '내가 주최', className: 'bg-gray-100 text-gray-700' },
   participant: { label: '참석 요청', className: 'bg-gray-100 text-gray-600' },
 }
 

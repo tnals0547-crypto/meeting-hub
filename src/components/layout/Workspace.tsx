@@ -129,7 +129,7 @@ export default function Workspace({
                   오늘 확인할 내용
                 </h3>
                 {actionRequired.length > 0 && (
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-1.5 py-0.5 text-caption font-medium text-red-600">
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-caption font-medium text-red-600">
                     {actionRequired.length}
                   </span>
                 )}
@@ -140,7 +140,7 @@ export default function Workspace({
                     href="/meetings"
                     className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-body-sm text-gray-700 transition-colors hover:bg-gray-50"
                   >
-                    <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-status-pending" />
+                    <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-warning" />
                     <span>응답을 기다리는 회의 {pendingCount}건</span>
                   </Link>
                 )}
@@ -149,7 +149,7 @@ export default function Workspace({
                     href={`/meetings/${allMeetings.find((m) => m.status === 'response_complete')?.id}/replacement`}
                     className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-body-sm text-gray-700 transition-colors hover:bg-gray-50"
                   >
-                    <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-status-focused" />
+                    <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-status-replacement" />
                     <span>대체 참석이 필요한 회의 {replacementCount}건</span>
                   </Link>
                 )}
@@ -158,7 +158,7 @@ export default function Workspace({
                     href="/meetings"
                     className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-body-sm text-gray-700 transition-colors hover:bg-gray-50"
                   >
-                    <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-status-available" />
+                    <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-success" />
                     <span>오늘 확정 예정인 회의 {confirmTodayCount}건</span>
                   </Link>
                 )}

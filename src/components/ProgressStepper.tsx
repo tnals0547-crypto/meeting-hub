@@ -19,6 +19,7 @@ const stepIndex: Record<MeetingStatus, number> = {
   response_collecting: 1,
   response_complete: 2,
   confirmed: 3,
+  completed: 3,
 }
 
 export default function ProgressStepper({ status, myRole, myResponseStatus }: ProgressStepperProps) {
@@ -54,8 +55,8 @@ export default function ProgressStepper({ status, myRole, myResponseStatus }: Pr
           <div key={step.label} className="flex items-center flex-1">
             <div className="flex flex-col items-center gap-1">
               <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold transition-all ${
-                isCompleted ? 'bg-green-500 text-white'
-                  : isActive ? 'bg-brand-500 text-white ring-4 ring-brand-500/20'
+                isCompleted ? 'bg-gray-900 text-white'
+                  : isActive ? 'bg-gray-700 text-white ring-4 ring-gray-200'
                   : 'bg-gray-100 text-gray-400'
               }`}>
                 {isCompleted ? <Check className="h-4 w-4" /> : isActive ? <Dot className="h-6 w-6" /> : i + 1}
@@ -69,7 +70,7 @@ export default function ProgressStepper({ status, myRole, myResponseStatus }: Pr
               </span>
             </div>
             {i < steps.length - 1 && (
-              <div className={`flex-1 h-px mx-2 ${i < current ? 'bg-green-500' : 'bg-gray-200'}`} />
+              <div className={`flex-1 h-px mx-2 ${i < current ? 'bg-gray-900' : 'bg-gray-200'}`} />
             )}
           </div>
         )

@@ -52,11 +52,11 @@ const typeDot: Record<EventType, string> = {
 }
 
 const typeBg: Record<EventType, string> = {
-  meeting: 'bg-brand-50 border-l-brand-500',
-  focus: 'bg-green-50 border-l-green-500',
-  external: 'bg-amber-50 border-l-amber-500',
-  vacation: 'bg-red-50 border-l-red-400',
-  personal: 'bg-purple-50 border-l-purple-400',
+  meeting: 'bg-gray-50 border-l-brand-500',
+  focus: 'bg-gray-50 border-l-green-500',
+  external: 'bg-gray-50 border-l-warning',
+  vacation: 'bg-gray-50 border-l-danger',
+  personal: 'bg-gray-50 border-l-status-replacement',
 }
 
 const HOURS = Array.from({ length: 9 }, (_, i) => i + 9)
@@ -203,9 +203,9 @@ function EventDetailPanel({ event, onClose, onEdit }: { event: CalendarEvent; on
                 <h4 className="text-caption font-semibold text-gray-500 uppercase tracking-wider">참석자</h4>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {event.requiredMembers.map((m) => (
-                    <span key={m.id} className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-2xs font-medium text-blue-700">
+                    <span key={m.id} className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-2xs font-medium text-gray-700">
                       {m.name}
-                      <span className="text-blue-400">· 필수</span>
+                      <span className="text-gray-400">· 필수</span>
                     </span>
                   ))}
                   {event.optionalMembers.map((m) => (
@@ -234,9 +234,9 @@ function EventDetailPanel({ event, onClose, onEdit }: { event: CalendarEvent; on
                 </div>
               </div>
 
-              <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
-                <p className="text-caption font-medium text-amber-800">다음 액션</p>
-                <p className="mt-0.5 text-body-sm text-amber-700">참석 요청을 보내고 응답을 기다리고 있어요.</p>
+              <div className="rounded-lg border border-l-4 border-gray-200 border-l-warning bg-gray-50 px-4 py-3">
+                <p className="text-caption font-medium text-gray-700">다음 액션</p>
+                <p className="mt-0.5 text-body-sm text-gray-600">참석 요청을 보내고 응답을 기다리고 있어요.</p>
               </div>
             </div>
           </>
@@ -454,10 +454,10 @@ function EventFormPanel({
         {isMeeting && (
           <>
             <hr className="border-gray-100" />
-            <div className="space-y-4 rounded-lg border border-brand-100 bg-brand-50/30 p-4">
+            <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4">
               <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-brand-600" />
-                <span className="text-body-sm font-semibold text-brand-700">회의 조율</span>
+                <CalendarDays className="h-4 w-4 text-gray-400" />
+                <span className="text-body-sm font-semibold text-gray-900">회의 조율</span>
               </div>
 
               <MemberSelector
@@ -613,8 +613,8 @@ export default function CalendarPage() {
   }, [weekStart, weekEnd])
 
   const slotColor = (status: string) => {
-    if (status === 'all') return 'border-green-200 bg-green-50 text-green-700'
-    return 'border-amber-200 bg-amber-50 text-amber-700'
+    if (status === 'all') return 'border-green-200 bg-white text-green-700'
+    return 'border-amber-200 bg-white text-amber-700'
   }
   const slotIcon = (status: string) => {
     if (status === 'all') return <CheckCircle className="h-3.5 w-3.5" />
@@ -622,7 +622,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col bg-gray-50">
+    <div className="flex min-h-0 w-full flex-1 flex-col bg-gray-50">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
         <div className="flex items-center gap-3">
@@ -657,7 +657,7 @@ export default function CalendarPage() {
             <div className="grid grid-cols-[60px_repeat(5,1fr)] border-b border-gray-200 bg-white">
               <div className="px-2 py-2" />
               {weekDays.map((day) => (
-                <div key={day.dateStr} className={`px-2 py-2 text-center ${day.isToday ? 'bg-brand-50/50' : ''}`}>
+                <div key={day.dateStr} className={`px-2 py-2 text-center ${day.isToday ? 'bg-gray-50' : ''}`}>
                   <span className="text-caption font-medium text-gray-500">{day.dayName}</span>
                   <span className={`ml-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full text-title font-semibold ${
                     day.isToday ? 'bg-gray-900 text-white' : 'text-gray-900'
@@ -716,7 +716,7 @@ export default function CalendarPage() {
                       {day.dayNum}
                     </span>
                     <span className="text-caption font-medium text-gray-500">{day.dayName}요일</span>
-                    {day.isToday && <span className="text-2xs font-medium text-brand-600">오늘</span>}
+                    {day.isToday && <span className="text-2xs font-medium text-gray-600">오늘</span>}
                   </div>
                   {dayEvents.length === 0 ? (
                     <p className="pl-9 text-caption text-gray-400">일정 없음</p>
@@ -727,7 +727,7 @@ export default function CalendarPage() {
                           key={evt.id}
                           onClick={() => handleSelectEvent(evt)}
                           className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
-                            selectedEvent?.id === evt.id ? 'bg-brand-50' : 'hover:bg-gray-50'
+                            selectedEvent?.id === evt.id ? 'bg-gray-100' : 'hover:bg-gray-50'
                           }`}
                         >
                           <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${typeDot[evt.type]}`} />
@@ -746,7 +746,7 @@ export default function CalendarPage() {
           {candidateSlots.length > 0 && (
             <div className="border-t border-gray-200 bg-white px-6 py-4">
               <div className="flex items-center gap-2 mb-3">
-                <CalendarDays className="h-4 w-4 text-brand-600" />
+                <CalendarDays className="h-4 w-4 text-gray-400" />
                 <h3 className="text-title font-semibold text-gray-900">이번 주 가능한 회의 시간</h3>
               </div>
               <div className="flex flex-wrap gap-2">

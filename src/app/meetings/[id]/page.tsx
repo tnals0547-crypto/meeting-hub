@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowRight, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, HelpCircle } from 'lucide-react'
+import { ArrowRight, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, HelpCircle, FileText, Mic, Video } from 'lucide-react'
 import { meetings } from '@/data/mock'
 import type { Meeting, MeetingStatus, MeetingRole } from '@/types/meeting'
 import StatusBadge from '@/components/common/StatusBadge'
@@ -18,6 +18,11 @@ function formatDate(dateString: string) {
     day: 'numeric',
     weekday: 'short',
   })
+}
+
+function formatTimeSlot(meeting: Meeting) {
+  if (!meeting.confirmedTimeSlot) return '확정 시간 없음'
+  return `${meeting.confirmedTimeSlot.date} ${meeting.confirmedTimeSlot.startTime}~${meeting.confirmedTimeSlot.endTime}`
 }
 
 function getReason(meeting: Meeting): string {
@@ -82,15 +87,12 @@ function ResponseSummary({ meeting }: { meeting: Meeting }) {
 
       <div className="flex gap-1.5">
         <div
-          className="h-2 rounded-full transition-all"
-          style={{
-            width: `${(approved / total) * 100}%`,
-            backgroundColor: hasRequiredDeclined ? '#f59e0b' : '#16a34a',
-          }}
+          className={`h-2 rounded-full transition-all ${hasRequiredDeclined ? 'bg-warning' : 'bg-gray-700'}`}
+          style={{ width: `${(approved / total) * 100}%` }}
         />
         {declined > 0 && (
           <div
-            className="h-2 rounded-full bg-red-400 transition-all"
+            className="h-2 rounded-full bg-gray-400 transition-all"
             style={{ width: `${(declined / total) * 100}%` }}
           />
         )}
@@ -125,8 +127,8 @@ function ResponseSummary({ meeting }: { meeting: Meeting }) {
 }
 
 const summaryLabel: Record<string, { label: string; className: string }> = {
-  approved: { label: '승인', className: 'bg-green-100 text-green-800' },
-  declined: { label: '불참', className: 'bg-red-100 text-red-800' },
+  approved: { label: '승인', className: 'bg-green-50 text-green-700' },
+  declined: { label: '불참', className: 'bg-red-50 text-red-700' },
   pending: { label: '미응답', className: 'bg-gray-100 text-gray-600' },
 }
 
@@ -150,6 +152,117 @@ export default async function MeetingProgressPage({
     notFound()
   }
 
+  if (meeting.status === 'completed') {
+    const records = meeting.records
+    const rightPanel = (
+      <div className="hidden lg:flex lg:flex-col lg:gap-5">
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-gray-900">회의 정보</h3>
+          <dl className="mt-3 space-y-2 text-body-sm text-gray-600">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-gray-400" />
+              <dd>{meeting.organizerName} · 참석자 {meeting.participants.length}명</dd>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-gray-400" />
+              <dd>{formatTimeSlot(meeting)}</dd>
+            </div>
+            {meeting.location && (
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-gray-400" />
+                <dd>{meeting.location}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-gray-900">참석자</h3>
+          <div className="mt-3">
+            <ParticipantList participants={meeting.participants} />
+          </div>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-gray-900">다음 액션</h3>
+          <p className="mt-2 text-body-sm leading-relaxed text-gray-600">
+            회의록과 기록 파일을 확인한 뒤 후속 액션을 업무 채널에 공유할 수 있습니다.
+          </p>
+        </div>
+      </div>
+    )
+
+    return (
+      <div className="flex min-h-full flex-col bg-gray-50">
+        <div className="w-full border-b border-gray-200 bg-white px-6 py-5">
+          <Link
+            href="/meetings?filter=completed"
+            className="inline-flex items-center gap-1 text-body-sm text-gray-500 transition-colors hover:text-gray-900"
+          >
+            ← 회의 기록
+          </Link>
+          <div className="mt-4 flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-heading-s font-semibold text-gray-900">{meeting.title}</h1>
+              <p className="mt-1 text-body-sm text-gray-500">
+                {formatTimeSlot(meeting)}
+                {meeting.location && ` · ${meeting.location}`}
+              </p>
+            </div>
+            <StatusBadge status={meeting.status} />
+          </div>
+        </div>
+
+        <PageLayout hideSidebar right={rightPanel}>
+          <div className="space-y-5">
+            <section className="rounded-xl border border-gray-200 bg-white p-5">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-gray-400" />
+                <h2 className="text-title font-semibold text-gray-900">회의록</h2>
+              </div>
+              <ul className="mt-4 space-y-3">
+                {(records?.minutes ?? ['회의록이 정리 중입니다.']).map((minute) => (
+                  <li key={minute} className="flex gap-2 text-body-sm leading-relaxed text-gray-700">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
+                    <span>{minute}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-xl border border-gray-200 bg-white p-5">
+                <div className="flex items-center gap-2">
+                  <Mic className="h-4 w-4 text-gray-400" />
+                  <h2 className="text-title font-semibold text-gray-900">녹음 기록</h2>
+                </div>
+                <p className="mt-3 text-body-sm font-medium text-gray-900">{records?.recording.title ?? '녹음 기록'}</p>
+                <p className="mt-1 text-caption text-gray-500">
+                  {records?.recording.duration ?? '-'} · {records?.recording.status === 'processing' ? '처리 중' : '확인 가능'}
+                </p>
+              </div>
+              <div className="rounded-xl border border-gray-200 bg-white p-5">
+                <div className="flex items-center gap-2">
+                  <Video className="h-4 w-4 text-gray-400" />
+                  <h2 className="text-title font-semibold text-gray-900">화상회의 녹화</h2>
+                </div>
+                <p className="mt-3 text-body-sm font-medium text-gray-900">{records?.video.title ?? '화상회의 녹화'}</p>
+                <p className="mt-1 text-caption text-gray-500">
+                  {records?.video.duration ?? '-'} · {records?.video.status === 'processing' ? '처리 중' : '확인 가능'}
+                </p>
+              </div>
+            </section>
+
+            <section className="rounded-xl border border-gray-200 bg-white p-5 lg:hidden">
+              <h2 className="text-title font-semibold text-gray-900">참석자</h2>
+              <div className="mt-3">
+                <ParticipantList participants={meeting.participants} />
+              </div>
+            </section>
+          </div>
+        </PageLayout>
+      </div>
+    )
+  }
+
   const summary = {
     approved: meeting.participants.filter((p) => p.responseStatus === 'approved').length,
     declined: meeting.participants.filter((p) => p.responseStatus === 'declined').length,
@@ -159,13 +272,6 @@ export default async function MeetingProgressPage({
   const hasDeclinedRequired = meeting.participants.some(
     (p) => p.isRequired && p.responseStatus === 'declined',
   )
-
-  const statusDot: Record<string, string> = {
-    pending: 'bg-blue-500',
-    response_collecting: 'bg-amber-500',
-    response_complete: 'bg-purple-500',
-    confirmed: 'bg-green-500',
-  }
 
   const isConfirmed = meeting.status === 'confirmed'
   const needsReplacement = meeting.status === 'response_complete' && hasDeclinedRequired
@@ -185,7 +291,7 @@ export default async function MeetingProgressPage({
         <StatusBadge status={meeting.status} />
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium ${
           meeting.myRole === 'organizer'
-            ? 'bg-brand-50 text-brand-700'
+            ? 'bg-gray-100 text-gray-700'
             : 'bg-gray-100 text-gray-600'
         }`}>
           {meeting.myRole === 'organizer' ? '주최자' : '참석자'}
@@ -195,10 +301,10 @@ export default async function MeetingProgressPage({
   )
 
   const organizerReasonSection = !isConfirmed && (
-    <section className="rounded-xl border border-amber-100 bg-amber-50 p-4">
+    <section className="rounded-xl border border-l-4 border-gray-200 border-l-warning bg-white p-4">
       <div className="flex items-start gap-3">
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100">
-          <span className="text-caption font-bold text-amber-700">!</span>
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100">
+          <span className="text-caption font-bold text-warning">!</span>
         </div>
         <div>
           <h3 className="text-sm font-semibold text-gray-900">
@@ -265,31 +371,9 @@ export default async function MeetingProgressPage({
     </div>
   )
 
-  const sidebar = (
-    <div className="hidden lg:block">
-      <h2 className="text-title font-semibold text-gray-900">내 회의</h2>
-      <nav className="mt-3 space-y-1">
-        {meetings.map((m) => (
-          <Link
-            key={m.id}
-            href={`/meetings/${m.id}`}
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-title transition-colors ${
-              m.id === id
-                ? 'bg-brand-50 font-medium text-gray-900'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${statusDot[m.status]}`} />
-            <span className="truncate">{m.title}</span>
-          </Link>
-        ))}
-      </nav>
-    </div>
-  )
-
   return (
-    <div className="flex flex-col items-center bg-gray-50 min-h-full">
-      <div className="w-full max-w-7xl px-6 pt-6 pb-0">
+    <div className="flex min-h-full flex-col bg-gray-50">
+      <div className="w-full border-b border-gray-200 bg-white px-6 py-5">
         <Link
           href="/"
           className="inline-flex items-center gap-1 text-body-sm text-gray-500 hover:text-gray-900 transition-colors"
@@ -299,7 +383,7 @@ export default async function MeetingProgressPage({
         {headerSection}
       </div>
 
-      <PageLayout sidebar={sidebar} right={rightPanel}>
+      <PageLayout hideSidebar right={rightPanel}>
         {/* Mobile: single column */}
         <div className="lg:hidden space-y-5">
           {meeting.myRole === 'participant' ? (

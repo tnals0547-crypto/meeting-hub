@@ -97,12 +97,12 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
   }
 
   const timeSlotSection = meeting.confirmedTimeSlot && (
-    <div className="rounded-xl border border-green-100 bg-green-50 p-5">
+    <div className="rounded-xl border border-l-4 border-gray-200 border-l-success bg-white p-5">
       <div className="flex items-center gap-2">
-        <Calendar className="h-4 w-4 text-green-600" />
-        <p className="text-caption font-semibold text-green-700">선택된 시간</p>
+        <Calendar className="h-4 w-4 text-gray-400" />
+        <p className="text-caption font-semibold text-gray-700">선택된 시간</p>
       </div>
-      <p className="mt-2 text-heading-s font-bold text-green-900">
+      <p className="mt-2 text-heading-s font-bold text-gray-900">
         {formatDate(meeting.confirmedTimeSlot.date)}{' '}
         {meeting.confirmedTimeSlot.startTime} ~{' '}
         {meeting.confirmedTimeSlot.endTime}
@@ -139,8 +139,8 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
   )
 
   return (
-    <div className="flex min-h-full flex-col items-center bg-gray-50">
-      <div className="w-full max-w-7xl px-6 pt-6 pb-0">
+    <div className="flex min-h-full flex-col bg-gray-50">
+      <div className="w-full border-b border-gray-200 bg-white px-6 py-5">
         <Link
           href="/"
           className="inline-flex items-center gap-1 text-body-sm text-gray-500 hover:text-gray-900 transition-colors"
@@ -157,7 +157,7 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
       <PageLayout hideSidebar right={rightPanel}>
         {/* Mobile */}
         <div className="lg:hidden">
-          {timeSlotSection && <div className="mt-6">{timeSlotSection}</div>}
+          {timeSlotSection && <div>{timeSlotSection}</div>}
           <div className="mt-4">
             <StatusBadge status={status} />
           </div>
@@ -192,7 +192,7 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
 
         {/* Desktop */}
         <div className="hidden lg:block">
-          {timeSlotSection && <div className="mt-6">{timeSlotSection}</div>}
+          {timeSlotSection && <div>{timeSlotSection}</div>}
           <div className="mt-4">
             <StatusBadge status={status} />
           </div>
@@ -209,7 +209,7 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
             <div className="mt-5">
               <Button
                 href={`/meetings/${meeting.id}/replacement`}
-                variant="danger"
+                variant="primary"
                 className="w-full justify-between text-base"
               >
                 <span>대체 참석자 선택하기</span>

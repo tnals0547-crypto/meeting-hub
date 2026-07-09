@@ -211,8 +211,8 @@ export default function TimeSelectionPage() {
   )
 
   return (
-    <div className="flex min-h-full flex-col items-center bg-gray-50">
-      <div className="w-full max-w-7xl px-6 pt-6 pb-0">
+    <div className="flex min-h-full flex-col bg-gray-50">
+      <div className="w-full border-b border-gray-200 bg-white px-6 py-5">
         <Link
           href="/meetings/new"
           className="inline-flex items-center gap-1 text-body-sm text-gray-500 hover:text-gray-900 transition-colors"
@@ -234,7 +234,7 @@ export default function TimeSelectionPage() {
           )
         }
       >
-        <div className="mt-6">
+        <div>
           <TimeSlotCard
             slot={heroSlot!}
             mode="hero"

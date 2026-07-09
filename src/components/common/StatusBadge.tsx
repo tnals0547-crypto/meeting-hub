@@ -1,4 +1,4 @@
-import { Loader2, CheckCircle, AlertCircle, HelpCircle, Clock, UserPlus } from 'lucide-react'
+import { Loader2, CheckCircle, AlertCircle, HelpCircle, Archive, UserPlus } from 'lucide-react'
 import type { MeetingStatus } from '@/types/meeting'
 
 interface StatusBadgeProps {
@@ -12,7 +12,7 @@ const statusConfig: Record<
 > = {
   pending: {
     label: '참석 요청 대기',
-    className: 'bg-gray-100 text-gray-600',
+    className: 'bg-blue-50 text-blue-700',
     icon: <HelpCircle className="h-3.5 w-3.5" />,
   },
   response_collecting: {
@@ -29,6 +29,11 @@ const statusConfig: Record<
     label: '확정 완료',
     className: 'bg-green-50 text-green-700',
     icon: <CheckCircle className="h-3.5 w-3.5" />,
+  },
+  completed: {
+    label: '회의 기록',
+    className: 'bg-gray-100 text-gray-700',
+    icon: <Archive className="h-3.5 w-3.5" />,
   },
 }
 

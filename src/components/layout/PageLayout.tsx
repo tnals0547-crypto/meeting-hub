@@ -17,35 +17,35 @@ export default function PageLayout({
 }: PageLayoutProps) {
   if (hideSidebar && hideRight) {
     return (
-      <div className="flex w-full max-w-7xl flex-1 flex-col px-6 py-6 mx-auto gap-6">
-        <div className="min-w-0">{children}</div>
+      <div className="flex min-h-0 w-full flex-1 flex-col gap-4 p-5">
+        <div className="min-w-0 flex-1">{children}</div>
       </div>
     )
   }
 
   if (hideSidebar) {
     return (
-      <div className="flex w-full max-w-7xl flex-1 flex-col px-6 py-6 mx-auto gap-6 lg:grid lg:grid-cols-[1fr_320px]">
+      <div className="grid min-h-0 w-full flex-1 grid-cols-1 gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0">{children}</div>
-        {right && <div className="lg:sticky lg:top-6 lg:self-start">{right}</div>}
+        {right && <aside className="hidden min-w-0 lg:sticky lg:top-5 lg:block lg:self-start">{right}</aside>}
       </div>
     )
   }
 
   if (hideRight) {
     return (
-      <div className="flex w-full max-w-7xl flex-1 flex-col px-6 py-6 mx-auto gap-6 lg:grid lg:grid-cols-[220px_1fr]">
-        {sidebar && <div>{sidebar}</div>}
+      <div className="grid min-h-0 w-full flex-1 grid-cols-1 gap-4 p-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+        {sidebar && <aside className="min-w-0">{sidebar}</aside>}
         <div className="min-w-0">{children}</div>
       </div>
     )
   }
 
   return (
-    <div className="flex w-full max-w-7xl flex-1 flex-col px-6 py-6 mx-auto gap-6 lg:grid lg:grid-cols-[220px_1fr_320px]">
-      {sidebar && <div>{sidebar}</div>}
+    <div className="grid min-h-0 w-full flex-1 grid-cols-1 gap-4 p-5 lg:grid-cols-[260px_minmax(0,1fr)_340px]">
+      {sidebar && <aside className="min-w-0">{sidebar}</aside>}
       <div className="min-w-0">{children}</div>
-      {right && <div className="lg:sticky lg:top-6 lg:self-start">{right}</div>}
+      {right && <aside className="hidden min-w-0 lg:sticky lg:top-5 lg:block lg:self-start">{right}</aside>}
     </div>
   )
 }
