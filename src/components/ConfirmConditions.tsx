@@ -1,13 +1,16 @@
 import type { Meeting } from '@/types/meeting'
+import { Check, Circle, AlertTriangle, CheckCircle } from 'lucide-react'
 
 interface ConfirmConditionsProps {
   meeting: Meeting
 }
 
 interface Condition {
-  label: string
+  title: string
   done: boolean
+  icon: React.ReactNode
   detail?: string
+  status: 'done' | 'current' | 'pending'
 }
 
 function getConditions(meeting: Meeting): Condition[] {
@@ -20,34 +23,50 @@ function getConditions(meeting: Meeting): Condition[] {
   const declinedRequired = meeting.participants.find(
     (p) => p.isRequired && p.responseStatus === 'declined',
   )
-
   const hasSentRequest = meeting.participants.some(
     (p) => p.responseStatus !== 'pending',
   )
 
+  const respondedCount = meeting.participants.filter(
+    (p) => p.responseStatus !== 'pending',
+  ).length
+  const totalCount = meeting.participants.length
+
   return [
     {
-      label: '참석자에게 응답 요청 보내기',
+      title: '참석자 응답 요청',
       done: hasSentRequest,
+      icon: hasSentRequest ? <CheckCircle className="h-4 w-4" /> : <Circle className="h-4 w-4" />,
+      detail: hasSentRequest ? `${respondedCount}/${totalCount}명 응답` : undefined,
+      status: hasSentRequest ? (allResponded ? 'done' : 'current') : 'current',
     },
     {
-      label: '모든 참석자 응답 완료',
+      title: '모든 참석자 응답 완료',
       done: allResponded,
+      icon: allResponded ? <Check className="h-4 w-4" /> : <Circle className="h-4 w-4" />,
+      status: allResponded ? 'done' : (hasSentRequest ? 'current' : 'pending'),
       detail: allResponded
         ? undefined
-        : `${meeting.participants.filter((p) => p.responseStatus !== 'pending').length}/${meeting.participants.length}`,
+        : `${respondedCount}/${totalCount}`,
     },
     {
-      label: '필수 참석 조건 충족',
+      title: '필수 참석 조건 충족',
       done: requiredApproved,
-      detail:
-        declinedRequired
-          ? `${declinedRequired.name} 대체 필요`
-          : undefined,
+      icon: requiredApproved
+        ? <Check className="h-4 w-4" />
+        : declinedRequired
+          ? <AlertTriangle className="h-4 w-4" />
+          : <Circle className="h-4 w-4" />,
+      detail: declinedRequired
+        ? `${declinedRequired.name} 대체 참석 요청 필요`
+        : undefined,
+      status: requiredApproved ? 'done' : (declinedRequired ? 'current' : 'pending'),
     },
     {
-      label: '회의 확정',
+      title: '회의 확정',
       done: meeting.status === 'confirmed',
+      icon: meeting.status === 'confirmed' ? <CheckCircle className="h-4 w-4" /> : <Circle className="h-4 w-4" />,
+      status: meeting.status === 'confirmed' ? 'done' : 'pending',
     },
   ]
 }
@@ -60,46 +79,54 @@ export default function ConfirmConditions({ meeting }: ConfirmConditionsProps) {
   const remaining = total - doneCount
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50 p-5">
+    <div className="rounded-xl border border-gray-100 bg-white p-5">
       <div className="flex items-end justify-between">
-        <h3 className="text-sm font-semibold text-gray-900">
-          회의를 확정하려면
-        </h3>
-        <span className="text-2xl font-bold text-gray-900">{percent}%</span>
+        <h3 className="text-sm font-semibold text-gray-900">회의 확정 조건</h3>
+        <span className="text-heading-s font-bold text-gray-900">{doneCount}/{total}</span>
       </div>
 
-      <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-gray-200">
+      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-100">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-gray-800 to-black transition-all"
+          className="h-full rounded-full transition-all bg-gray-900"
           style={{ width: `${percent}%` }}
         />
       </div>
 
-      <p className="mt-2 text-xs text-gray-400">
+      <p className="mt-1.5 text-caption text-gray-500">
         {remaining > 0
           ? `남은 작업 ${remaining}개`
           : '모든 조건을 충족했습니다'}
       </p>
 
-      <ul className="mt-4 flex flex-col gap-2 border-t border-gray-200 pt-4">
+      <ul className="mt-4 flex flex-col gap-2.5 border-t border-gray-100 pt-4">
         {conditions.map((c) => (
-          <li key={c.label} className="flex items-center gap-2 text-sm">
+          <li key={c.title} className="flex items-center gap-2.5 text-title">
             <span
-              className={`flex items-center justify-center w-5 h-5 rounded-full shrink-0 text-xs font-bold ${
-                c.done
+              className={`flex items-center justify-center w-5 h-5 rounded-full shrink-0 ${
+                c.status === 'done'
                   ? 'bg-green-500 text-white'
-                  : 'bg-gray-200 text-gray-400'
+                  : c.status === 'current'
+                    ? 'bg-brand-500 text-white'
+                    : 'bg-gray-200 text-gray-400'
               }`}
             >
-              {c.done ? '✓' : ''}
+              {c.icon}
             </span>
             <span
-              className={c.done ? 'text-gray-500' : 'text-gray-900 font-medium'}
+              className={
+                c.status === 'done'
+                  ? 'text-gray-500 line-through'
+                  : c.status === 'current'
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-400'
+              }
             >
-              {c.label}
+              {c.title}
             </span>
             {c.detail && (
-              <span className="text-xs text-gray-400">({c.detail})</span>
+              <span className={`text-caption ${c.status === 'current' ? 'text-brand-600' : 'text-gray-500'}`}>
+                ({c.detail})
+              </span>
             )}
           </li>
         ))}

@@ -2,9 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { Users, Calendar, ArrowRight } from 'lucide-react'
 import type { Meeting } from '@/types/meeting'
 import StatusBadge from '@/components/common/StatusBadge'
+import Button from '@/components/common/Button'
+import EmptyState from '@/components/common/EmptyState'
+import { SkeletonCard } from '@/components/common/Skeleton'
+import ErrorState from '@/components/common/ErrorState'
 import ParticipantList from '@/components/ParticipantList'
+import ProgressStepper from '@/components/ProgressStepper'
+import ConfirmConditions from '@/components/ConfirmConditions'
+import PageLayout from '@/components/layout/PageLayout'
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -24,20 +32,51 @@ function formatCreatedAt(dateStr: string) {
 export default function DynamicMeetingPage({ id }: { id: string }) {
   const [meeting, setMeeting] = useState<Meeting | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  function loadMeeting() {
+    setLoading(true)
+    setError(null)
+    try {
+      const stored = sessionStorage.getItem(`meeting-${id}`)
+      if (stored) {
+        const data = JSON.parse(stored)
+        if (!data.myRole) data.myRole = 'organizer'
+        setMeeting(data)
+      } else {
+        setMeeting(null)
+      }
+    } catch {
+      setError('회의 정보를 불러오는 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const stored = sessionStorage.getItem(`meeting-${id}`)
-    if (stored) {
-      setMeeting(JSON.parse(stored))
-    }
-    setLoading(false)
+    loadMeeting()
   }, [id])
 
   if (loading) {
     return (
-      <div className="flex min-h-full flex-col items-center bg-zinc-50">
+      <div className="flex min-h-full flex-col items-center bg-gray-50">
+        <main className="flex w-full max-w-xl flex-col gap-4 px-6 py-10">
+          <SkeletonCard />
+          <SkeletonCard />
+        </main>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-full flex-col items-center bg-gray-50">
         <main className="flex w-full max-w-xl flex-col px-6 py-10">
-          <p className="text-sm text-gray-500">로딩 중...</p>
+          <ErrorState
+            title="회의 정보를 불러올 수 없습니다"
+            description={error}
+            onRetry={loadMeeting}
+          />
         </main>
       </div>
     )
@@ -45,79 +84,146 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
 
   if (!meeting) {
     return (
-      <div className="flex min-h-full flex-col items-center bg-zinc-50">
+      <div className="flex min-h-full flex-col items-center bg-gray-50">
         <main className="flex w-full max-w-xl flex-col px-6 py-10">
-          <p className="text-sm text-gray-500">회의 정보를 찾을 수 없습니다.</p>
-          <Link
-            href="/"
-            className="mt-4 text-sm font-medium text-gray-900 underline"
-          >
-            홈으로 돌아가기
-          </Link>
+          <EmptyState
+            icon="calendar"
+            title="회의 정보를 찾을 수 없습니다"
+            action={{ label: '홈으로 돌아가기', href: '/' }}
+          />
         </main>
       </div>
     )
   }
 
+  const timeSlotSection = meeting.confirmedTimeSlot && (
+    <div className="rounded-xl border border-green-100 bg-green-50 p-5">
+      <div className="flex items-center gap-2">
+        <Calendar className="h-4 w-4 text-green-600" />
+        <p className="text-caption font-semibold text-green-700">선택된 시간</p>
+      </div>
+      <p className="mt-2 text-heading-s font-bold text-green-900">
+        {formatDate(meeting.confirmedTimeSlot.date)}{' '}
+        {meeting.confirmedTimeSlot.startTime} ~{' '}
+        {meeting.confirmedTimeSlot.endTime}
+      </p>
+    </div>
+  )
+
+  const status = meeting.status
+  const needsReplacement = status === 'response_complete' &&
+    meeting.participants.some((p) => p.isRequired && p.responseStatus === 'declined')
+
+  const rightPanel = (
+    <div className="hidden lg:flex lg:flex-col lg:gap-5">
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <h3 className="text-sm font-semibold text-gray-900">참석자 목록</h3>
+        <div className="mt-3">
+          <ParticipantList participants={meeting.participants} />
+        </div>
+      </div>
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <h3 className="text-sm font-semibold text-gray-900">회의 정보</h3>
+        <dl className="mt-2 space-y-2 text-body-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-gray-400" />
+            <dd>{meeting.organizerName}</dd>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-gray-400" />
+            <dd>{formatCreatedAt(meeting.createdAt)}</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  )
+
   return (
-    <div className="flex min-h-full flex-col items-center bg-zinc-50">
-      <main className="flex w-full max-w-xl flex-col px-6 py-6">
+    <div className="flex min-h-full flex-col items-center bg-gray-50">
+      <div className="w-full max-w-7xl px-6 pt-6 pb-0">
         <Link
           href="/"
-          className="mb-6 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900"
+          className="inline-flex items-center gap-1 text-body-sm text-gray-500 hover:text-gray-900 transition-colors"
         >
-          ← Meeting Hub
+          ← Relay
         </Link>
 
-        <h1 className="text-xl font-bold text-gray-900">{meeting.title}</h1>
-
-        {meeting.confirmedTimeSlot && (
-          <div className="mt-6 rounded-2xl border border-green-100 bg-green-50 p-5">
-            <p className="text-sm font-medium text-green-800">선택된 시간</p>
-            <p className="mt-1 text-lg font-bold text-green-900">
-              {formatDate(meeting.confirmedTimeSlot.date)}{' '}
-              {meeting.confirmedTimeSlot.startTime} ~{' '}
-              {meeting.confirmedTimeSlot.endTime}
-            </p>
-          </div>
+        <h1 className="mt-2 text-heading-s font-semibold text-gray-900">{meeting.title}</h1>
+        {meeting.description && (
+          <p className="mt-1 text-body-sm text-gray-500">{meeting.description}</p>
         )}
+      </div>
 
-        <div className="mt-4">
-          <StatusBadge status={meeting.status} />
-        </div>
-
-        <p className="mt-4 text-sm text-gray-500">{meeting.description}</p>
-
-        <section className="mt-10">
-          <h2 className="text-sm font-semibold text-gray-900">참석자 목록</h2>
-          <div className="mt-3">
-            <ParticipantList participants={meeting.participants} />
+      <PageLayout hideSidebar right={rightPanel}>
+        {/* Mobile */}
+        <div className="lg:hidden">
+          {timeSlotSection && <div className="mt-6">{timeSlotSection}</div>}
+          <div className="mt-4">
+            <StatusBadge status={status} />
           </div>
-        </section>
-
-        <section className="mt-8 border-t border-gray-100 pt-5">
-          <h2 className="text-xs font-medium text-gray-400">회의 정보</h2>
-          <dl className="mt-2 space-y-1 text-xs text-gray-400">
-            <div className="flex gap-1">
-              <dt>주최자</dt>
-              <dd>{meeting.organizerName}</dd>
+          <div className="mt-5">
+            <ConfirmConditions meeting={meeting} />
+          </div>
+          <div className="mt-10">
+            <h3 className="text-title font-semibold text-gray-900">진행 단계</h3>
+            <div className="mt-4">
+              <ProgressStepper status={status} />
             </div>
-            <div className="flex gap-1">
-              <dt>생성일</dt>
-              <dd>{formatCreatedAt(meeting.createdAt)}</dd>
+          </div>
+          <div className="mt-10">
+            <h3 className="text-title font-semibold text-gray-900">참석자 목록</h3>
+            <div className="mt-3">
+              <ParticipantList participants={meeting.participants} />
             </div>
-          </dl>
-        </section>
-
-        <div className="mt-8">
-          <Link
-            href="/"
-            className="flex w-full items-center justify-center rounded-xl bg-black px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-black/80"
-          >
-            홈으로 돌아가기
-          </Link>
+          </div>
+          <div className="mt-8 border-t border-gray-100 pt-5">
+            <h3 className="text-title font-medium text-gray-500">회의 정보</h3>
+            <dl className="mt-2 text-body-sm text-gray-600">
+              <div>주최자: {meeting.organizerName}</div>
+              <div className="mt-1">생성일: {formatCreatedAt(meeting.createdAt)}</div>
+            </dl>
+          </div>
+          <div className="mt-8">
+            <Button href="/" variant="secondary" className="w-full">
+              홈으로 돌아가기
+            </Button>
+          </div>
         </div>
-      </main>
+
+        {/* Desktop */}
+        <div className="hidden lg:block">
+          {timeSlotSection && <div className="mt-6">{timeSlotSection}</div>}
+          <div className="mt-4">
+            <StatusBadge status={status} />
+          </div>
+          <div className="mt-5">
+            <ConfirmConditions meeting={meeting} />
+          </div>
+          <div className="mt-6">
+            <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">진행 단계</h3>
+              <ProgressStepper status={status} />
+            </div>
+          </div>
+          {needsReplacement && (
+            <div className="mt-5">
+              <Button
+                href={`/meetings/${meeting.id}/replacement`}
+                variant="danger"
+                className="w-full justify-between text-base"
+              >
+                <span>대체 참석자 선택하기</span>
+                <ArrowRight className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
+          <div className="mt-8">
+            <Button href="/" variant="secondary" className="w-full">
+              홈으로 돌아가기
+            </Button>
+          </div>
+        </div>
+      </PageLayout>
     </div>
   )
 }

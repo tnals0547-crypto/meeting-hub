@@ -1,6 +1,7 @@
 import type { Meeting, MeetingRole } from '@/types/meeting'
 import StatusBadge from '@/components/common/StatusBadge'
 import Button from '@/components/common/Button'
+import { ArrowRight } from 'lucide-react'
 
 const ROLE_CONFIG: Record<MeetingRole, { label: string; className: string }> = {
   organizer: { label: '내가 주최', className: 'bg-blue-50 text-blue-600' },
@@ -27,8 +28,8 @@ const actionConfig: Record<
     href: (id) => `/meetings/${id}`,
   },
   response_complete: {
-    description: '필수 참석자가 불참하여 대체 참석자 지정이 필요합니다.',
-    cta: '대체 참석자 지정하기',
+    description: '필수 참석자가 불참하여 대체 참석자 선택이 필요합니다.',
+    cta: '대체 참석자 선택하기',
     href: (id) => `/meetings/${id}`,
   },
   confirmed: {
@@ -51,32 +52,34 @@ export default function MeetingCard({ meeting, ctaOverride }: MeetingCardProps) 
   const action = actionConfig[meeting.status] ?? actionConfig.pending
   const ctaLabel = ctaOverride?.label ?? action.cta
   const ctaHref = ctaOverride?.href ?? action.href(meeting.id)
+  const role = meeting.myRole ?? 'organizer'
+  const roleConfig = ROLE_CONFIG[role]
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 transition-shadow hover:shadow-md hover:border-gray-200">
-      <h3 className="text-base font-semibold text-gray-900">{meeting.title}</h3>
+      <h3 className="text-title font-semibold text-gray-900">{meeting.title}</h3>
 
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-body-sm text-gray-600">
         {formatDate(meeting.createdAt)} · {meeting.location}
       </p>
 
       <div className="mt-2 flex items-center gap-2">
         <StatusBadge status={meeting.status} />
         <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_CONFIG[meeting.myRole].className}`}
+          className={`inline-flex h-6 items-center rounded-full px-2 text-caption font-medium ${roleConfig.className}`}
         >
-          {ROLE_CONFIG[meeting.myRole].label}
+          {roleConfig.label}
         </span>
       </div>
 
-      <p className="mt-2 text-sm leading-snug text-gray-600">
+      <p className="mt-2 text-body-sm leading-snug text-gray-600">
         {action.description}
       </p>
 
       <div className="mt-3">
         <Button href={ctaHref} className="w-full justify-between">
           <span>{ctaLabel}</span>
-          <span className="text-lg leading-none">→</span>
+          <ArrowRight className="h-5 w-5" />
         </Button>
       </div>
     </div>

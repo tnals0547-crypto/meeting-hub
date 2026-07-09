@@ -15,7 +15,7 @@ const responseLabel: Record<string, { label: string; className: string }> = {
   },
   pending: {
     label: '미응답',
-    className: 'bg-gray-100 text-gray-500',
+    className: 'bg-gray-100 text-gray-600',
   },
 }
 
@@ -36,18 +36,18 @@ export default function ParticipantList({ participants }: ParticipantListProps) 
                   {p.name}
                 </span>
                 {p.isRequired && (
-                  <span className="shrink-0 rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-600">
+                  <span className="shrink-0 inline-flex h-6 items-center rounded-full px-2 text-caption font-medium text-blue-600 bg-blue-50">
                     필수
                   </span>
                 )}
               </div>
-              <span className="text-xs text-gray-400 truncate">
+              <span className="text-xs text-gray-600 truncate">
                 {p.department} · {p.role}
               </span>
             </div>
 
             <span
-              className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${response.className}`}
+              className={`shrink-0 inline-flex h-6 items-center rounded-full px-2.5 text-caption font-medium ${response.className}`}
             >
               {response.label}
             </span>

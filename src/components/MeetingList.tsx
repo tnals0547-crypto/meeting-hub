@@ -25,6 +25,7 @@ export default function MeetingList({ initialMeetings }: MeetingListProps) {
       if (key && key.startsWith('meeting-') && key !== 'newMeetingForm') {
         try {
           const data = JSON.parse(sessionStorage.getItem(key)!)
+          if (!data.myRole) data.myRole = 'organizer'
           meetings.push(data)
         } catch {
           /* ignore parse errors */
@@ -45,7 +46,7 @@ export default function MeetingList({ initialMeetings }: MeetingListProps) {
   })
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-4">
       {allMeetings.map((meeting) => (
         <MeetingCard
           key={meeting.id}

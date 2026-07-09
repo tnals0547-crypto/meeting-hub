@@ -3,17 +3,25 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { ArrowRight, Mail, CheckCircle, Check, AlertTriangle, AlertCircle, Send, ArrowLeft, UserCheck } from 'lucide-react'
 import { meetings } from '@/data/mock'
 import type { Meeting, ReplacementCandidate, AvailabilityStatus } from '@/types/meeting'
 import StatusBadge from '@/components/common/StatusBadge'
 import Button from '@/components/common/Button'
+import EmptyState from '@/components/common/EmptyState'
+import ErrorState from '@/components/common/ErrorState'
+import PageLayout from '@/components/layout/PageLayout'
 
-const AVAILABILITY: Record<AvailabilityStatus, { icon: string; label: string }> = {
-  available: { icon: '🟢', label: '지금 연락 가능' },
-  in_meeting: { icon: '🟡', label: '회의 중' },
-  focused: { icon: '🟠', label: '집중 업무' },
-  on_leave: { icon: '🔴', label: '연차' },
+const AVAILABILITY: Record<AvailabilityStatus, { dotClass: string; label: string }> = {
+  available: { dotClass: 'bg-green-500', label: '지금 연락 가능' },
+  in_meeting: { dotClass: 'bg-amber-500', label: '회의 중' },
+  focused: { dotClass: 'bg-blue-500', label: '집중 업무' },
+  on_leave: { dotClass: 'bg-gray-400', label: '연차' },
 }
+
+const StatusDot = ({ dotClass }: { dotClass: string }) => (
+  <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
+)
 
 const STEPS = ['팀원 선택', '요청 확인', '요청 완료']
 
@@ -23,16 +31,22 @@ function ProblemSection({ meeting }: { meeting: Meeting }) {
   )
 
   return (
-    <section className="rounded-xl border border-red-100 bg-red-50 p-5">
-      <h2 className="text-sm font-semibold text-gray-900">
-        회의를 아직 확정할 수 없는 이유
-      </h2>
-      {declinedRequired && (
-        <p className="mt-2 text-sm leading-relaxed text-gray-700">
-          {declinedRequired.name}({declinedRequired.department} ·{' '}
-          {declinedRequired.role})님이 필수 참석자지만 불참했어요.
-        </p>
-      )}
+    <section className="rounded-xl border border-amber-100 bg-amber-50 p-4">
+      <div className="flex items-start gap-3">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100">
+          <AlertCircle className="h-3.5 w-3.5 text-amber-700" />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-gray-900">대체 참석자 선택이 필요해요</h2>
+          {declinedRequired && (
+            <p className="mt-1 text-body-sm leading-relaxed text-gray-700">
+              <span className="font-medium">{declinedRequired.name}</span>
+              ({declinedRequired.department} · {declinedRequired.role})
+              님이 필수 참석자이지만 불참했어요. 대체자를 선택해주세요.
+            </p>
+          )}
+        </div>
+      </div>
     </section>
   )
 }
@@ -46,41 +60,42 @@ function SummaryCard({ meeting }: { meeting: Meeting }) {
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-5">
-      <p className="text-xs font-medium text-gray-500">이번 요청이 완료되면</p>
+      <p className="text-body-sm font-medium text-gray-600">이번 요청이 완료되면</p>
 
       <div className="mt-3 flex items-end gap-6">
         <div>
-          <p className="text-xs text-gray-400">현재</p>
-          <p className="mt-1 text-2xl font-bold text-gray-400">
+          <p className="text-caption text-gray-500">현재</p>
+          <p className="mt-1 text-heading-l font-bold text-gray-500">
             {approved}
-            <span className="text-base font-normal text-gray-300">/{total}</span>
+            <span className="text-title font-normal text-gray-300">/{total}</span>
           </p>
         </div>
 
         <div className="flex flex-col items-center pb-1">
-          <span className="text-lg text-gray-300">→</span>
+          <ArrowRight className="h-5 w-5 text-gray-300" />
         </div>
 
         <div>
-          <p className="text-xs font-medium text-gray-900">완료 시</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">
+          <p className="text-caption font-medium text-gray-900">완료 시</p>
+          <p className="mt-1 text-heading-l font-bold text-gray-900">
             {approved + 1}
-            <span className="text-base font-normal text-gray-500">/{total}</span>
+            <span className="text-title font-normal text-gray-600">/{total}</span>
           </p>
         </div>
       </div>
 
-      <div className="mt-3 flex h-2 gap-1">
-        <div className="h-full flex-1 rounded-full bg-green-400" />
-        <div className="h-full flex-1 rounded-full bg-gray-200" />
-        <div className="h-full flex-1 rounded-full bg-gray-200" />
-        <div className="h-full flex-1 rounded-full bg-gray-200" />
+      <div className="mt-3 h-2 rounded-full bg-gray-200 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-gray-800 to-black transition-all"
+          style={{ width: `${Math.min(afterPercent, 100)}%` }}
+        />
       </div>
 
-      <div className="mt-1 flex items-center justify-between text-xs">
-        <span className="text-gray-400">{Math.round((approved / total) * 100)}%</span>
-        <span className="font-semibold text-gray-900">
-          {Math.round(afterPercent)}% ✅ 회의 확정 가능
+      <div className="mt-1.5 flex items-center justify-between text-caption">
+        <span className="text-gray-500">{Math.round((approved / total) * 100)}%</span>
+        <span className="inline-flex items-center gap-1 font-semibold text-green-700">
+          <CheckCircle className="h-3.5 w-3.5" />
+          <span>회의 확정 가능</span>
         </span>
       </div>
     </div>
@@ -93,14 +108,16 @@ function StepIndicator({ current }: { current: number }) {
       {STEPS.map((step, i) => (
         <div key={step} className="flex items-center gap-2">
           <span
-            className={`text-xs font-medium ${
-              i <= current ? 'text-gray-900' : 'text-gray-300'
+            className={`inline-flex h-6 items-center rounded-full px-2.5 text-caption font-medium ${
+              i <= current
+                ? 'bg-brand-50 text-brand-600'
+                : 'bg-gray-100 text-gray-400'
             }`}
           >
-            {step}
+            {i === current && current < STEPS.length - 1 ? `▶ ${step}` : step}
           </span>
           {i < STEPS.length - 1 && (
-            <span className="text-xs text-gray-200">→</span>
+            <ArrowRight className="h-3 w-3 text-gray-300" />
           )}
         </div>
       ))}
@@ -108,27 +125,23 @@ function StepIndicator({ current }: { current: number }) {
   )
 }
 
-function PrimaryReason({ candidate }: { candidate: ReplacementCandidate }) {
+function SelectionRationale({ candidate }: { candidate: ReplacementCandidate }) {
   const avail = AVAILABILITY[candidate.availability]
-  const hasProjectExp = candidate.rationale.some((r) => r.includes('프로젝트'))
-  const sameRole = candidate.rationale.some((r) => r.includes('역할'))
-
-  const lines = [
-    `${avail.icon} ${avail.label}`,
-  ]
-
-  if (sameRole) {
-    lines.push('같은 역할 경험이 있어 빠르게 적응할 수 있어요')
-  }
-
-  if (hasProjectExp) {
-    lines.push('해당 프로젝트 경험이 있어요')
-  }
 
   return (
-    <p className="text-xs leading-relaxed text-gray-500">
-      {lines.join(' · ')}
-    </p>
+    <div className="flex flex-wrap items-center gap-2 text-body-sm leading-relaxed text-gray-600">
+      <span className="inline-flex items-center gap-1">
+        <StatusDot dotClass={avail.dotClass} />
+        {avail.label}
+      </span>
+      {candidate.rationale.map((r) => (
+        <span key={r} className="inline-flex items-center gap-1">
+          <span className="text-gray-300">·</span>
+          <Check className="h-3 w-3 text-green-500" />
+          {r}
+        </span>
+      ))}
+    </div>
   )
 }
 
@@ -138,12 +151,14 @@ function MemberCard({
   isOther,
   onSelect,
   onRequest,
+  requesting,
 }: {
   candidate: ReplacementCandidate
   isSelected: boolean
   isOther: boolean
   onSelect: () => void
   onRequest: () => void
+  requesting?: boolean
 }) {
   const avail = AVAILABILITY[candidate.availability]
 
@@ -151,75 +166,64 @@ function MemberCard({
     return (
       <button
         onClick={onSelect}
-        className="w-full rounded-2xl border border-gray-100 bg-white p-5 text-left transition-colors hover:border-gray-300 hover:bg-gray-50 cursor-pointer"
+        className="w-full rounded-xl border border-gray-100 bg-white p-5 text-left transition-all hover:border-gray-300 hover:bg-gray-50 cursor-pointer"
       >
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-base font-semibold text-gray-900">
-              {candidate.name}
-            </h3>
-            <p className="text-sm text-gray-500">
-              {candidate.department} · {candidate.role}
-            </p>
+            <h3 className="text-title font-semibold text-gray-900">{candidate.name}</h3>
+            <p className="text-body-sm text-gray-500">{candidate.department} · {candidate.role}</p>
           </div>
-          <span className="shrink-0 text-xs text-gray-500">
-            {avail.icon} {avail.label}
+          <span className="inline-flex shrink-0 items-center gap-1 text-caption text-gray-500">
+            <StatusDot dotClass={avail.dotClass} />
+            {avail.label}
           </span>
         </div>
-
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-          {candidate.rationale.map((item) => (
-            <span key={item} className="text-xs text-gray-500">
-              ✓ {item}
-            </span>
-          ))}
+        <div className="mt-3">
+          <SelectionRationale candidate={candidate} />
         </div>
       </button>
     )
   }
 
   return (
-    <div className="rounded-2xl border border-black bg-white p-5">
-      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600">
-        가장 먼저 요청할 팀원
-      </span>
-
-      {isSelected && (
-        <span className="ml-2 inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-600">
-          선택됨
+    <div className="rounded-xl border border-gray-900 bg-white p-5">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-6 items-center gap-1 rounded-full bg-blue-50 px-2.5 text-caption font-medium text-blue-600">
+          <UserCheck className="h-3.5 w-3.5" />
+          가장 먼저 요청할 팀원
         </span>
-      )}
-
-      <div className="mt-2">
-        <PrimaryReason candidate={candidate} />
-      </div>
-
-      <div className="mt-3 flex items-start justify-between">
-        <div>
-          <h3 className="text-base font-semibold text-gray-900">
-            {candidate.name}
-          </h3>
-          <p className="text-sm text-gray-500">
-            {candidate.department} · {candidate.role}
-          </p>
-        </div>
-        <span className="shrink-0 text-xs text-gray-500">
-          {avail.icon} {avail.label}
-        </span>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-        {candidate.rationale.map((item) => (
-          <span key={item} className="text-xs text-gray-500">
-            ✓ {item}
+        {isSelected && (
+          <span className="inline-flex h-6 items-center gap-1 rounded-full bg-green-50 px-2.5 text-caption font-medium text-green-600">
+            <Check className="h-3.5 w-3.5" />
+            선택됨
           </span>
-        ))}
+        )}
+      </div>
+
+      <div className="mt-3">
+        <SelectionRationale candidate={candidate} />
+      </div>
+
+      <div className="mt-4 flex items-start justify-between">
+        <div>
+          <h3 className="text-title font-semibold text-gray-900">{candidate.name}</h3>
+          <p className="text-body-sm text-gray-500">{candidate.department} · {candidate.role}</p>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1 text-caption text-gray-500">
+          <StatusDot dotClass={avail.dotClass} />
+          {avail.label}
+        </span>
       </div>
 
       <div className="mt-4">
-        <Button onClick={onRequest} className="w-full justify-between">
+        <Button
+          onClick={onRequest}
+          loading={requesting}
+          disabled={requesting}
+          className="w-full justify-between"
+        >
           <span>{candidate.name}에게 요청</span>
-          <span className="text-lg leading-none">→</span>
+          <ArrowRight className="h-5 w-5" />
         </Button>
       </div>
     </div>
@@ -231,27 +235,29 @@ function ConfirmationStep({
   meeting,
   onConfirm,
   onBack,
+  confirming,
 }: {
   candidate: ReplacementCandidate
   meeting: Meeting
   onConfirm: () => void
   onBack: () => void
+  confirming?: boolean
 }) {
   const approved = meeting.participants.filter(
     (p) => p.responseStatus === 'approved',
   ).length
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5">
-      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-xl mx-auto">
-        ✉️
+    <div className="rounded-xl border border-gray-100 bg-white p-6 text-center">
+      <div className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-50 mx-auto">
+        <Send className="h-7 w-7 text-blue-600" />
       </div>
 
-      <h3 className="mt-4 text-center text-lg font-semibold text-gray-900">
+      <h3 className="mt-5 text-heading-s font-semibold text-gray-900">
         {candidate.name}님에게 대체 참석을 요청할까요?
       </h3>
 
-      <p className="mt-2 text-center text-sm text-gray-500">
+      <p className="mt-2 text-body-sm text-gray-500">
         요청이 수락되면{' '}
         <span className="font-semibold text-gray-900">
           {approved + 1}/{meeting.participants.length}명
@@ -260,14 +266,16 @@ function ConfirmationStep({
       </p>
 
       <div className="mt-6 flex gap-3">
-        <button
-          onClick={onBack}
-          className="flex-1 rounded-xl border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-        >
+        <Button onClick={onBack} variant="secondary" className="flex-1">
           다시 선택
-        </button>
+        </Button>
         <div className="flex-1">
-          <Button onClick={onConfirm} className="w-full">
+          <Button
+            onClick={onConfirm}
+            loading={confirming}
+            disabled={confirming}
+            className="w-full"
+          >
             요청 보내기
           </Button>
         </div>
@@ -284,26 +292,23 @@ function SuccessStep({
   meeting: Meeting
 }) {
   return (
-    <div className="rounded-2xl border border-green-100 bg-green-50 p-5">
-      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-xl mx-auto">
-        ✅
+    <div className="rounded-xl border border-green-100 bg-green-50 p-6 text-center">
+      <div className="flex items-center justify-center w-14 h-14 rounded-full bg-green-100 mx-auto">
+        <CheckCircle className="h-7 w-7 text-green-600" />
       </div>
 
-      <h3 className="mt-4 text-center text-lg font-semibold text-gray-900">
+      <h3 className="mt-5 text-heading-s font-semibold text-gray-900">
         {candidate.name}님에게 대체 참석 요청을 보냈어요
       </h3>
 
-      <p className="mt-2 text-center text-sm text-gray-500">
+      <p className="mt-2 text-body-sm text-gray-500">
         수락 여부를 기다린 후 회의를 확정할 수 있어요.
       </p>
 
       <div className="mt-6">
-        <Link
-          href={`/meetings/${meeting.id}`}
-          className="flex w-full items-center justify-center rounded-xl bg-black px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-black/80"
-        >
+        <Button href={`/meetings/${meeting.id}`} className="w-full">
           회의 현황으로 돌아가기
-        </Link>
+        </Button>
       </div>
     </div>
   )
@@ -312,6 +317,9 @@ function SuccessStep({
 export default function ReplacementPage() {
   const [step, setStep] = useState(0)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [requesting, setRequesting] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const params = useParams()
   const id = params.id as string
 
@@ -323,15 +331,14 @@ export default function ReplacementPage() {
 
   if (!meeting || candidates.length === 0) {
     return (
-      <div className="flex flex-col items-center bg-zinc-50 min-h-full">
+      <div className="flex flex-col items-center bg-gray-50 min-h-full">
         <main className="flex w-full max-w-xl flex-col px-6 py-10">
-          <p className="text-sm text-gray-500">팀원 정보를 찾을 수 없습니다.</p>
-          <Link
-            href="/"
-            className="mt-4 text-sm font-medium text-gray-900 underline"
-          >
-            홈으로 돌아가기
-          </Link>
+          <EmptyState
+            icon="user-plus"
+            title="대체 참석할 팀원이 없습니다"
+            description="팀원 정보를 찾을 수 없습니다. 이전 화면으로 돌아가주세요."
+            action={{ label: '이전으로 돌아가기', href: `/meetings/${id}` }}
+          />
         </main>
       </div>
     )
@@ -340,106 +347,218 @@ export default function ReplacementPage() {
   const currentPrimary = selected ?? primary
 
   function handleRequest() {
-    setStep(1)
+    setRequesting(true)
+    setError(null)
+    setTimeout(() => {
+      setRequesting(false)
+      setStep(1)
+    }, 800)
   }
 
   function handleConfirm() {
-    setStep(2)
+    setConfirming(true)
+    setError(null)
+    setTimeout(() => {
+      setConfirming(false)
+      setStep(2)
+    }, 1000)
   }
 
   function handleBack() {
     setSelectedId(null)
     setStep(0)
+    setError(null)
   }
 
   function handleSelect(id: string) {
     setSelectedId(id)
+    setError(null)
   }
 
+  const statusDot: Record<string, string> = {
+    pending: 'bg-blue-500',
+    response_collecting: 'bg-amber-500',
+    response_complete: 'bg-purple-500',
+    confirmed: 'bg-green-500',
+  }
+
+  const sidebar = (
+    <div className="hidden lg:block">
+      <h2 className="text-title font-semibold text-gray-900">내 회의</h2>
+      <nav className="mt-3 space-y-1">
+        {meetings.map((m) => (
+          <Link
+            key={m.id}
+            href={`/meetings/${m.id}`}
+            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-title transition-colors ${
+              m.id === id
+                ? 'bg-gray-100 font-medium text-gray-900'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${statusDot[m.status]}`} />
+            <span className="truncate">{m.title}</span>
+          </Link>
+        ))}
+      </nav>
+    </div>
+  )
+
+  const otherCandidatesPanel = (
+    <div className="hidden lg:flex lg:flex-col lg:gap-3">
+      <h2 className="text-title font-semibold text-gray-900">다른 팀원</h2>
+      {others.length === 0 && (
+        <p className="text-body-sm text-gray-500">다른 팀원이 없습니다.</p>
+      )}
+      {others.map((c) => (
+        <MemberCard
+          key={c.id}
+          candidate={c}
+          isSelected={c.id === selectedId}
+          isOther={true}
+          onSelect={() => handleSelect(c.id)}
+          onRequest={handleRequest}
+        />
+      ))}
+    </div>
+  )
+
+  const headerContent = (
+    <>
+      <Link
+        href={`/meetings/${meeting.id}`}
+        className="inline-flex items-center gap-1 text-body-sm text-gray-500 hover:text-gray-900 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        {meeting.title}
+      </Link>
+
+      <h1 className="mt-2 text-heading-s font-semibold text-gray-900">대체 참석 요청</h1>
+
+      <div className="mt-2">
+        <StatusBadge status={meeting.status} />
+      </div>
+
+      <div className="mt-6">
+        <StepIndicator current={step} />
+      </div>
+    </>
+  )
+
   return (
-    <div className="flex flex-col items-center bg-zinc-50 min-h-full">
-      <main className="flex w-full max-w-xl flex-col px-6 py-6">
-        <Link
-          href={`/meetings/${meeting.id}`}
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-6"
-        >
-          ← {meeting.title}
-        </Link>
+    <div className="flex min-h-full flex-col items-center bg-gray-50">
+      {step === 0 ? (
+        <>
+          <div className="w-full max-w-7xl px-6 pt-6 pb-0">
+            {headerContent}
+          </div>
 
-        <h1 className="text-xl font-bold text-gray-900">대체 참석 요청</h1>
+          {error && (
+            <div className="mt-4 w-full max-w-7xl px-6">
+              <ErrorState
+                title="요청을 보내지 못했습니다"
+                description={error}
+                onRetry={handleRequest}
+              />
+            </div>
+          )}
 
-        <div className="mt-2">
-          <StatusBadge status={meeting.status} />
-        </div>
-
-        <div className="mt-6">
-          <StepIndicator current={step} />
-        </div>
-
-        <div className="mt-6">
-          <ProblemSection meeting={meeting} />
-        </div>
-
-        <div className="mt-4">
-          <SummaryCard meeting={meeting} />
-        </div>
-
-        {step === 0 && (
-          <>
-            <section className="mt-8">
-              <h2 className="text-sm font-semibold text-gray-900">
-                가장 먼저 요청할 팀원
-              </h2>
-              <div className="mt-3">
-                <MemberCard
-                  candidate={currentPrimary}
-                  isSelected={selected !== null}
-                  isOther={false}
-                  onSelect={() => handleSelect(currentPrimary.id)}
-                  onRequest={handleRequest}
-                />
+          <PageLayout sidebar={sidebar} right={otherCandidatesPanel}>
+            {/* Mobile */}
+            <div className="lg:hidden">
+              <div className="mt-6">
+                <ProblemSection meeting={meeting} />
               </div>
-            </section>
+              <div className="mt-4">
+                <SummaryCard meeting={meeting} />
+              </div>
 
-            {others.length > 0 && (
-              <section className="mt-6">
-                <h2 className="text-sm font-semibold text-gray-900">
-                  다른 팀원
-                </h2>
-                <div className="mt-3 flex flex-col gap-3">
-                  {others.map((c) => (
-                    <MemberCard
-                      key={c.id}
-                      candidate={c}
-                      isSelected={c.id === selectedId}
-                      isOther={true}
-                      onSelect={() => handleSelect(c.id)}
-                      onRequest={handleRequest}
-                    />
-                  ))}
+              <section className="mt-8">
+                <h2 className="text-title font-semibold text-gray-900">가장 먼저 요청할 팀원</h2>
+                <div className="mt-3">
+                  <MemberCard
+                    candidate={currentPrimary}
+                    isSelected={selected !== null}
+                    isOther={false}
+                    onSelect={() => handleSelect(currentPrimary.id)}
+                    onRequest={handleRequest}
+                    requesting={requesting}
+                  />
                 </div>
               </section>
+
+              {others.length > 0 && (
+                <section className="mt-6">
+                  <h2 className="text-title font-semibold text-gray-900">다른 팀원</h2>
+                  <div className="mt-3 flex flex-col gap-3">
+                    {others.map((c) => (
+                      <MemberCard
+                        key={c.id}
+                        candidate={c}
+                        isSelected={c.id === selectedId}
+                        isOther={true}
+                        onSelect={() => handleSelect(c.id)}
+                        onRequest={handleRequest}
+                        requesting={requesting}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+
+            {/* Desktop */}
+            <div className="hidden lg:block">
+              <div className="mt-6">
+                <ProblemSection meeting={meeting} />
+              </div>
+              <div className="mt-4">
+                <SummaryCard meeting={meeting} />
+              </div>
+
+              <section className="mt-8">
+                <h2 className="text-title font-semibold text-gray-900">가장 먼저 요청할 팀원</h2>
+                <div className="mt-3">
+                  <MemberCard
+                    candidate={currentPrimary}
+                    isSelected={selected !== null}
+                    isOther={false}
+                    onSelect={() => handleSelect(currentPrimary.id)}
+                    onRequest={handleRequest}
+                    requesting={requesting}
+                  />
+                </div>
+              </section>
+            </div>
+          </PageLayout>
+        </>
+      ) : (
+        <>
+          <div className="w-full max-w-7xl px-6 pt-6 pb-0">
+            {headerContent}
+          </div>
+
+          <PageLayout hideSidebar hideRight>
+            {step === 1 && currentPrimary && (
+              <div className="mt-8">
+                <ConfirmationStep
+                  candidate={currentPrimary}
+                  meeting={meeting}
+                  onConfirm={handleConfirm}
+                  onBack={handleBack}
+                  confirming={confirming}
+                />
+              </div>
             )}
-          </>
-        )}
 
-        {step === 1 && currentPrimary && (
-          <div className="mt-8">
-            <ConfirmationStep
-              candidate={currentPrimary}
-              meeting={meeting}
-              onConfirm={handleConfirm}
-              onBack={handleBack}
-            />
-          </div>
-        )}
-
-        {step === 2 && currentPrimary && (
-          <div className="mt-8">
-            <SuccessStep candidate={currentPrimary} meeting={meeting} />
-          </div>
-        )}
-      </main>
+            {step === 2 && currentPrimary && (
+              <div className="mt-8">
+                <SuccessStep candidate={currentPrimary} meeting={meeting} />
+              </div>
+            )}
+          </PageLayout>
+        </>
+      )}
     </div>
   )
 }

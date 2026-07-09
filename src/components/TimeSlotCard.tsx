@@ -1,6 +1,7 @@
 'use client'
 
 import type { TimeSlotWithAvailability } from '@/types/meeting'
+import Button from '@/components/common/Button'
 
 interface TimeSlotCardProps {
   slot: TimeSlotWithAvailability
@@ -33,24 +34,24 @@ export default function TimeSlotCard({
 
   if (mode === 'hero') {
     return (
-      <div className="rounded-2xl border border-gray-100 bg-white p-6">
-        <p className="text-sm font-semibold text-gray-900">
+      <div className="rounded-2xl border border-gray-100 bg-white p-5">
+        <p className="text-title font-semibold text-gray-900">
           바로 요청 가능한 시간
         </p>
 
-        <p className="mt-4 text-lg font-bold text-gray-900">
+        <p className="mt-4 text-heading-s font-bold text-gray-900">
           {formatDateLabel(slot.date)}
         </p>
-        <p className="text-lg font-bold text-gray-900">
+        <p className="text-heading-s font-bold text-gray-900">
           {slot.startTime} ~ {slot.endTime}
         </p>
 
         <div className="mt-4 space-y-2">
-          <p className="text-sm text-gray-900">
+          <p className="text-body-sm text-gray-900">
             {totalMemberCount}명 중 {availableMemberIds.length}명 가능
           </p>
           <p
-            className={`text-sm ${allRequiredAvailable ? 'text-green-600' : 'text-red-500'}`}
+            className={`text-body-sm ${allRequiredAvailable ? 'text-green-600' : 'text-red-500'}`}
           >
             필수 참석자{' '}
             {allRequiredAvailable
@@ -61,12 +62,12 @@ export default function TimeSlotCard({
 
         {availableMemberIds.length > 0 && (
           <div className="mt-4">
-            <p className="text-xs text-gray-500">가능한 참석자</p>
+            <p className="text-caption text-gray-600">가능한 참석자</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {availableMemberIds.map((mid) => (
                 <span
                   key={mid}
-                  className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
+                  className="inline-flex h-6 items-center rounded-full bg-surface-muted px-2 text-caption text-gray-700"
                 >
                   {memberNames[mid] ?? mid}
                 </span>
@@ -76,12 +77,9 @@ export default function TimeSlotCard({
         )}
 
         <div className="mt-6">
-          <button
-            onClick={onSubmit}
-            className="flex w-full items-center justify-center rounded-xl bg-black px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-black/80"
-          >
+          <Button onClick={onSubmit} className="w-full">
             이 시간으로 요청하기
-          </button>
+          </Button>
         </div>
       </div>
     )
@@ -96,7 +94,7 @@ export default function TimeSlotCard({
         <p className="text-sm font-semibold text-gray-900">
           {formatDateLabel(slot.date)}
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-600">
           {slot.startTime} ~ {slot.endTime}
         </p>
       </div>
