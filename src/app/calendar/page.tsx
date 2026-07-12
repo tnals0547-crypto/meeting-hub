@@ -526,35 +526,35 @@ function EventFormPanel({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
+        <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
+          <div className="min-w-0">
             <label className="text-body-sm font-semibold text-gray-500">날짜</label>
             <input
               type="date"
               value={eventDate}
               onChange={(e) => setEventDate(e.target.value)}
-              className="mt-1.5 w-full rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+              className="mt-1.5 w-full min-w-0 rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
+        <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
+          <div className="min-w-0">
             <label className="text-body-sm font-semibold text-gray-500">시작</label>
             <input
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="mt-1.5 w-full rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+              className="mt-1.5 w-full min-w-0 rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="text-body-sm font-semibold text-gray-500">종료</label>
             <input
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="mt-1.5 w-full rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+              className="mt-1.5 w-full min-w-0 rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
             />
           </div>
         </div>
@@ -570,13 +570,13 @@ function EventFormPanel({
           <label htmlFor="recurring" className="text-body-sm text-gray-700">반복 일정</label>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
+        <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
+          <div className="min-w-0">
             <label className="text-body-sm font-semibold text-gray-500">내 상태</label>
             <select
               value={myStatus}
               onChange={(e) => setMyStatus(e.target.value as typeof myStatus)}
-              className="mt-1.5 w-full rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+              className="mt-1.5 w-full min-w-0 rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
             >
               {MY_STATUS_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -668,23 +668,23 @@ function EventFormPanel({
 
               <div>
                 <p className="text-body-sm font-semibold text-gray-500">회의 가능 기간</p>
-                <div className="mt-1.5 grid grid-cols-2 gap-3">
-                  <div>
+                <div className="mt-1.5 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
+                  <div className="min-w-0">
                     <label className="text-body-sm font-semibold text-gray-500">시작일</label>
                     <input
                       type="date"
                       value={candidateStartDate}
                       onChange={(e) => setCandidateStartDate(e.target.value)}
-                      className="mt-1.5 w-full rounded-[8px] border border-gray-200 px-3 py-2 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+                      className="mt-1.5 w-full min-w-0 rounded-[8px] border border-gray-200 px-3 py-2 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
                     />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <label className="text-body-sm font-semibold text-gray-500">종료일</label>
                     <input
                       type="date"
                       value={candidateEndDate}
                       onChange={(e) => setCandidateEndDate(e.target.value)}
-                      className="mt-1.5 w-full rounded-[8px] border border-gray-200 px-3 py-2 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+                      className="mt-1.5 w-full min-w-0 rounded-[8px] border border-gray-200 px-3 py-2 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
                     />
                   </div>
                 </div>

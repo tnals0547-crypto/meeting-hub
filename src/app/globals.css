@@ -153,6 +153,13 @@ body {
   font-family: var(--font-sans);
 }
 
+input,
+select,
+textarea {
+  max-width: 100%;
+  min-width: 0;
+}
+
 @layer utilities {
   .text-gray-300 {
     color: var(--color-gray-400);

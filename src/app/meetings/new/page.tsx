@@ -378,11 +378,11 @@ export default function NewMeetingPage() {
 
       <div className="mt-4 space-y-2">
         {totalMembers > 0 && (
-          <div className={`rounded-[8px] border p-4 ${
+          <div className={`overflow-hidden rounded-[8px] border p-4 ${
             manualTimeEnabled ? 'border-gray-200 border-l-4 border-l-warning bg-white' : 'border-gray-200 bg-gray-50'
           }`}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
+              <div className="min-w-0">
                 <p className="text-body-sm font-semibold text-gray-900">직접 요청 시간</p>
                 <p className="mt-1 text-body-sm text-gray-600">
                   추천 후보 외 시간이 필요하면 직접 지정해서 참석 확인 요청을 보낼 수 있어요.
@@ -405,8 +405,8 @@ export default function NewMeetingPage() {
             </div>
 
             {manualTimeEnabled && (
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_120px_120px]">
-                <label className="block">
+              <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 min-[430px]:grid-cols-2 sm:grid-cols-[minmax(0,1fr)_120px_120px]">
+                <label className="block min-w-0 min-[430px]:col-span-2 sm:col-span-1">
                   <span className="text-body-sm text-gray-600">요청일</span>
                   <input
                     type="date"
@@ -414,26 +414,26 @@ export default function NewMeetingPage() {
                     min={normalizedStartDate}
                     max={normalizedEndDate}
                     onChange={(e) => setManualDate(e.target.value)}
-                    className="mt-1 w-full rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+                    className="mt-1 w-full min-w-0 rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
                   />
                 </label>
-                <label className="block">
+                <label className="block min-w-0">
                   <span className="text-body-sm text-gray-600">시작</span>
                   <input
                     type="time"
                     value={manualStartTime}
                     min={normalizedManualDate === todayDate ? minutesToTime(Math.min(currentMinute + 1, 23 * 60 + 59)) : undefined}
                     onChange={(e) => setManualStartTime(e.target.value)}
-                    className="mt-1 w-full rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+                    className="mt-1 w-full min-w-0 rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
                   />
                 </label>
-                <label className="block">
+                <label className="block min-w-0">
                   <span className="text-body-sm text-gray-600">종료</span>
                   <input
                     type="time"
                     value={manualEndTime}
                     onChange={(e) => setManualEndTime(e.target.value)}
-                    className="mt-1 w-full rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+                    className="mt-1 w-full min-w-0 rounded-[8px] border border-gray-200 px-3 py-2.5 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
                   />
                 </label>
                 {!isManualTimeValid && (
@@ -481,27 +481,27 @@ export default function NewMeetingPage() {
                     : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-3 min-[520px]:flex-row min-[520px]:items-center min-[520px]:justify-between">
+                  <div className="flex min-w-0 items-start gap-3">
                     <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
                       isSelected ? 'border-info bg-info' : 'border-gray-300'
                     }`}>
                       {isSelected && <CheckCircle className="h-4 w-4 text-white" />}
                     </span>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-body-sm font-semibold text-gray-900">{slot.dayLabel}</p>
                       <p className="text-body-sm text-gray-500">
                         {slot.startTime} ~ {slot.endTime} · {getDurationLabel(duration, customDurationMinutes)}
                       </p>
                     </div>
                   </div>
-                  <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-caption font-medium ${cfg.className}`}>
+                  <span className={`inline-flex w-fit shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-caption font-medium ${cfg.className}`}>
                     {cfg.icon}
                     {cfg.label}
                   </span>
                 </div>
 
-                <div className="mt-3 flex items-center gap-3 text-body-sm text-gray-500">
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-body-sm text-gray-500">
                   <span className="inline-flex items-center gap-1">
                     <Users className="h-3 w-3 text-gray-400" />
                     가능 {slot.availableCount}/{slot.totalCount}
@@ -525,7 +525,7 @@ export default function NewMeetingPage() {
                     </span>
                   )}
                   {isSelected && (
-                    <span className="ml-auto inline-flex items-center gap-1 text-body-sm font-medium text-gray-700">
+                    <span className="ml-auto inline-flex items-center gap-1 text-body-sm font-medium text-gray-700 max-[519px]:ml-0">
                       선택됨
                       <ChevronRight className="h-3 w-3" />
                     </span>
@@ -663,26 +663,26 @@ export default function NewMeetingPage() {
 
         <section className="mt-3 rounded-[8px] border border-gray-100 bg-white p-5">
           <label className="text-title font-semibold text-gray-900">회의 가능 기간</label>
-          <div className="mt-3 flex items-center gap-3">
-            <div className="flex-1">
+          <div className="mt-3 grid grid-cols-1 gap-3 min-[520px]:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] min-[520px]:items-center">
+            <div className="min-w-0">
               <p className="text-body-sm text-gray-600">시작일</p>
               <input
                 type="date"
                 value={normalizedStartDate}
                 min={todayDate}
                 onChange={(e) => handleStartDateChange(e.target.value)}
-                className="mt-1 w-full rounded-[8px] border border-gray-200 px-4 py-3 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+                className="mt-1 w-full min-w-0 rounded-[8px] border border-gray-200 px-4 py-3 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
               />
             </div>
-            <span className="mt-5 text-title text-gray-300">~</span>
-            <div className="flex-1">
+            <span className="hidden text-title text-gray-300 min-[520px]:mt-5 min-[520px]:block">~</span>
+            <div className="min-w-0">
               <p className="text-body-sm text-gray-600">종료일</p>
               <input
                 type="date"
                 value={normalizedEndDate}
                 min={normalizedStartDate}
                 onChange={(e) => handleEndDateChange(e.target.value)}
-                className="mt-1 w-full rounded-[8px] border border-gray-200 px-4 py-3 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+                className="mt-1 w-full min-w-0 rounded-[8px] border border-gray-200 px-4 py-3 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
               />
             </div>
           </div>
