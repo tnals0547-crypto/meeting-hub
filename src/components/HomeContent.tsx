@@ -78,17 +78,16 @@ export default function HomeContent({ meetings, initialFilter }: HomeContentProp
       return (priority[a.status] ?? 9) - (priority[b.status] ?? 9)
     })
 
-  const activeFilter = initialFilter ?? 'active'
+  const activeFilter = initialFilter === 'confirmed' ? 'active' : initialFilter ?? 'active'
   const allMeetings = allMeetingSource.filter((m) => {
     if (activeFilter === 'completed') return m.status === 'completed'
-    if (initialFilter) return m.status === initialFilter
+    if (activeFilter !== 'active') return m.status === activeFilter
     return m.status !== 'completed'
   })
 
   const pending = allMeetingSource.filter((m) => m.status === 'pending')
   const collecting = allMeetingSource.filter((m) => m.status === 'response_collecting')
   const replacement = allMeetingSource.filter((m) => m.status === 'response_complete')
-  const confirmed = allMeetingSource.filter((m) => m.status === 'confirmed')
   const completed = allMeetingSource.filter((m) => m.status === 'completed')
   const isRecordView = activeFilter === 'completed'
 
@@ -106,8 +105,8 @@ export default function HomeContent({ meetings, initialFilter }: HomeContentProp
       {/* Mobile summary */}
       <div className="w-full max-w-7xl px-6 pt-5 lg:hidden">
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {(['pending', 'response_collecting', 'response_complete', 'confirmed', 'completed'] as const).map((s) => {
-            const count = s === 'pending' ? pending.length : s === 'response_collecting' ? collecting.length : s === 'response_complete' ? replacement.length : s === 'confirmed' ? confirmed.length : completed.length
+          {(['pending', 'response_collecting', 'response_complete', 'completed'] as const).map((s) => {
+            const count = s === 'pending' ? pending.length : s === 'response_collecting' ? collecting.length : s === 'response_complete' ? replacement.length : completed.length
             if (count === 0) return null
             const cfg = stepLabel[s]
             return (

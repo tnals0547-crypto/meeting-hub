@@ -25,7 +25,6 @@ const MEETINGS_ITEMS = [
   { label: '참석 요청 전', href: '/meetings?filter=pending' },
   { label: '미응답 있음', href: '/meetings?filter=response_collecting' },
   { label: '대체 참석 필요', href: '/meetings?filter=response_complete' },
-  { label: '확정 완료', href: '/meetings?filter=confirmed' },
   { label: '회의 기록', href: '/meetings?filter=completed' },
 ]
 
