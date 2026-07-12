@@ -9,6 +9,7 @@ import { ArrowRight, Users, CheckCircle, XCircle, HelpCircle, Calendar, MapPin, 
 
 interface MeetingPreviewProps {
   meeting: Meeting
+  onRespond?: (meetingId: string, response: 'approved' | 'declined') => void
 }
 
 function formatDate(dateString: string) {
@@ -30,7 +31,7 @@ function formatMeetingDate(meeting: Meeting) {
   return formatDate(meeting.createdAt)
 }
 
-export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
+export default function MeetingPreview({ meeting, onRespond }: MeetingPreviewProps) {
   const approved = meeting.participants.filter((p) => p.responseStatus === 'approved').length
   const declined = meeting.participants.filter((p) => p.responseStatus === 'declined').length
   const pending = meeting.participants.filter((p) => p.responseStatus === 'pending').length
@@ -152,11 +153,19 @@ export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
           <div className="mt-4 rounded-lg bg-gray-50 p-4">
             <p className="text-body-sm font-medium text-gray-700">참석 여부를 선택해주세요</p>
             <div className="mt-3 flex gap-2">
-              <Button variant="primary" className="flex-1 gap-1.5">
+              <Button
+                variant="primary"
+                className="flex-1 gap-1.5"
+                onClick={() => onRespond?.(meeting.id, 'approved')}
+              >
                 <CheckCircle className="h-4 w-4" />
                 <span>참석</span>
               </Button>
-              <Button variant="secondary" className="flex-1 gap-1.5">
+              <Button
+                variant="secondary"
+                className="flex-1 gap-1.5"
+                onClick={() => onRespond?.(meeting.id, 'declined')}
+              >
                 <XCircle className="h-4 w-4" />
                 <span>불참</span>
               </Button>

@@ -90,7 +90,7 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
           <EmptyState
             icon="calendar"
             title="회의 정보를 찾을 수 없습니다"
-            action={{ label: '홈으로 돌아가기', href: '/' }}
+            action={{ label: '회의로 돌아가기', href: '/meetings' }}
           />
         </main>
       </div>
@@ -143,10 +143,10 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
     <div className="flex min-h-full flex-col bg-gray-50">
       <div className="w-full border-b border-gray-200 bg-white px-6 py-5">
         <Link
-          href="/"
+          href="/meetings"
           className="inline-flex items-center gap-1 text-body-sm text-gray-500 hover:text-gray-900 transition-colors"
         >
-          ← Relay
+          ← 회의
         </Link>
 
         <h1 className="mt-2 text-heading-s font-semibold text-gray-900">{meeting.title}</h1>
@@ -185,8 +185,8 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
             </dl>
           </div>
           <div className="mt-8">
-            <Button href="/" variant="secondary" className="w-full">
-              홈으로 돌아가기
+            <Button href="/meetings" variant="secondary" className="w-full">
+              회의로 돌아가기
             </Button>
           </div>
         </div>
@@ -219,8 +219,8 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
             </div>
           )}
           <div className="mt-8">
-            <Button href="/" variant="secondary" className="w-full">
-              홈으로 돌아가기
+            <Button href="/meetings" variant="secondary" className="w-full">
+              회의로 돌아가기
             </Button>
           </div>
         </div>

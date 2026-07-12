@@ -34,6 +34,13 @@ function readStoredMeetings() {
   return stored
 }
 
+function mergeMeetings(baseMeetings: Meeting[], storedMeetings: Meeting[]) {
+  const merged = new Map<string, Meeting>()
+  baseMeetings.forEach((meeting) => merged.set(meeting.id, meeting))
+  storedMeetings.forEach((meeting) => merged.set(meeting.id, meeting))
+  return Array.from(merged.values())
+}
+
 const stepLabel: Record<string, { icon: React.ReactNode; text: string; className: string }> = {
   pending: {
     icon: <HelpCircle className="h-3.5 w-3.5" />,
@@ -63,10 +70,46 @@ const stepLabel: Record<string, { icon: React.ReactNode; text: string; className
 }
 
 export default function HomeContent({ meetings, initialFilter }: HomeContentProps) {
-  const [dynamicMeetings] = useState<Meeting[]>(() => readStoredMeetings())
+  const [meetingItems, setMeetingItems] = useState<Meeting[]>(() =>
+    mergeMeetings(meetings, readStoredMeetings()),
+  )
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const allMeetingSource = [...dynamicMeetings, ...meetings]
+  function handleRespond(meetingId: string, response: 'approved' | 'declined') {
+    setMeetingItems((current) =>
+      current.map((meeting) => {
+        if (meeting.id !== meetingId) return meeting
+
+        let updatedOne = false
+        const participants = meeting.participants.map((participant) => {
+          if (updatedOne || participant.responseStatus !== 'pending') return participant
+          updatedOne = true
+          return {
+            ...participant,
+            responseStatus: response,
+            respondedAt: new Date().toISOString(),
+          }
+        })
+
+        if (!updatedOne) return meeting
+
+        const hasPending = participants.some((participant) => participant.responseStatus === 'pending')
+        const nextMeeting: Meeting = {
+          ...meeting,
+          participants,
+          status: hasPending ? meeting.status : 'response_complete',
+        }
+
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(`meeting-${meetingId}`, JSON.stringify(nextMeeting))
+        }
+
+        return nextMeeting
+      }),
+    )
+  }
+
+  const allMeetingSource = [...meetingItems]
     .sort((a, b) => {
       const priority: Record<string, number> = {
         response_complete: 0,
@@ -173,7 +216,7 @@ export default function HomeContent({ meetings, initialFilter }: HomeContentProp
       <div className="hidden min-h-0 flex-1 lg:block">
         <PageLayout
           hideSidebar
-          right={selected && <MeetingPreview meeting={selected} />}
+          right={selected && <MeetingPreview meeting={selected} onRespond={handleRespond} />}
         >
           <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
