@@ -125,8 +125,9 @@ export default async function MeetingProgressPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const { id } = await params
-  const { source, view, response, mail } = await searchParams
+  const { source, view, response, mail, returnTo } = await searchParams
   const sourceMailId = typeof mail === 'string' ? mail : undefined
+  const returnHref = typeof returnTo === 'string' && returnTo.startsWith('/') ? returnTo : '/meetings'
 
   if (source === 'new' || source === 'stored') {
     return <DynamicMeetingPage id={id} />
@@ -283,6 +284,7 @@ export default async function MeetingProgressPage({
   const needsReplacement = viewMeeting.status === 'response_complete' && hasDeclinedRequired
   const pageRole = isResponseStatusView ? 'organizer' : isRespondView ? 'participant' : viewMeeting.myRole
   const responseMailQuery = sourceMailId ? `&mail=${sourceMailId}` : ''
+  const responseReturnQuery = returnHref !== '/meetings' ? `&returnTo=${encodeURIComponent(returnHref)}` : ''
 
   const headerSection = (
     <>
@@ -342,11 +344,11 @@ export default async function MeetingProgressPage({
         <>
           <p className="mt-1 text-body-sm text-gray-500">참석 여부를 선택해주세요.</p>
           <div className="mt-3 flex gap-2">
-            <Button href={`/meetings/${meeting.id}?view=respond&response=approved${responseMailQuery}`} variant="primary" className="flex-1 gap-1.5">
+            <Button href={`/meetings/${meeting.id}?view=respond&response=approved${responseMailQuery}${responseReturnQuery}`} variant="primary" className="flex-1 gap-1.5">
               <CheckCircle className="h-4 w-4" />
               <span>참석</span>
             </Button>
-            <Button href={`/meetings/${meeting.id}?view=respond&response=declined${responseMailQuery}`} variant="secondary" className="flex-1 gap-1.5">
+            <Button href={`/meetings/${meeting.id}?view=respond&response=declined${responseMailQuery}${responseReturnQuery}`} variant="secondary" className="flex-1 gap-1.5">
               <XCircle className="h-4 w-4" />
               <span>불참</span>
             </Button>
@@ -402,10 +404,11 @@ export default async function MeetingProgressPage({
       )}
       <div className="w-full border-b border-gray-200 bg-white px-6 py-5">
         <Link
-          href="/meetings"
-          className="inline-flex items-center gap-1 text-body-sm text-gray-500 hover:text-gray-900 transition-colors"
+          href={returnHref}
+          aria-label="이전 화면으로 돌아가기"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
         >
-          ← 회의
+          ←
         </Link>
         {headerSection}
       </div>

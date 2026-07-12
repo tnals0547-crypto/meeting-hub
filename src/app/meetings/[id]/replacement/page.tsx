@@ -379,10 +379,10 @@ function ConfirmationStep({
 
 function SuccessStep({
   candidate,
-  meeting,
+  returnHref,
 }: {
   candidate: ReplacementCandidate
-  meeting: Meeting
+  returnHref: string
 }) {
   return (
     <div className="rounded-xl border border-l-4 border-gray-200 border-l-success bg-white p-6 text-center">
@@ -399,8 +399,8 @@ function SuccessStep({
       </p>
 
       <div className="mt-6">
-        <Button href={`/meetings/${meeting.id}?source=stored`} className="w-full">
-          회의 현황으로 돌아가기
+        <Button href={returnHref} className="w-full">
+          이전 화면으로 돌아가기
         </Button>
       </div>
     </div>
@@ -417,6 +417,9 @@ export default function ReplacementPage() {
   const searchParams = useSearchParams()
   const id = params.id as string
   const sourceMailId = searchParams.get('mail') ?? undefined
+  const returnTo = searchParams.get('returnTo')
+  const returnHref = returnTo && returnTo.startsWith('/') ? returnTo : `/meetings/${id}`
+  const successReturnHref = returnTo && returnTo.startsWith('/') ? returnTo : `/meetings/${id}?source=stored`
 
   const mockMeeting = meetings.find((m) => m.id === id)
   const [meetingState, setMeetingState] = useState<Meeting | null>(() =>
@@ -552,11 +555,11 @@ export default function ReplacementPage() {
   const headerContent = (
     <>
       <Link
-        href={`/meetings/${meeting.id}`}
-        className="inline-flex items-center gap-1 text-body-sm text-gray-500 hover:text-gray-900 transition-colors"
+        href={returnHref}
+        aria-label="이전 화면으로 돌아가기"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
       >
         <ArrowLeft className="h-4 w-4" />
-        {meeting.title}
       </Link>
 
       <h1 className="mt-2 text-heading-s font-semibold text-gray-900">대체 참석 요청</h1>
@@ -687,7 +690,7 @@ export default function ReplacementPage() {
 
             {step === 2 && currentPrimary && (
               <div className="mt-8">
-                <SuccessStep candidate={currentPrimary} meeting={meeting} />
+                <SuccessStep candidate={currentPrimary} returnHref={successReturnHref} />
               </div>
             )}
           </PageLayout>

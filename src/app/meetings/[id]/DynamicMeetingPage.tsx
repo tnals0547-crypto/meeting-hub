@@ -13,6 +13,7 @@ import ParticipantList from '@/components/ParticipantList'
 import ProgressStepper from '@/components/ProgressStepper'
 import ConfirmConditions from '@/components/ConfirmConditions'
 import PageLayout from '@/components/layout/PageLayout'
+import { meetings } from '@/data/mock'
 
 interface MeetingLoadState {
   meeting: Meeting | null
@@ -45,7 +46,8 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
         if (!data.myRole) data.myRole = 'organizer'
         return { meeting: data, error: null }
       }
-      return { meeting: null, error: null }
+      const fallbackMeeting = meetings.find((meeting) => meeting.id === id) ?? null
+      return { meeting: fallbackMeeting, error: null }
     } catch {
       return { meeting: null, error: '회의 정보를 불러오는 중 오류가 발생했습니다.' }
     }

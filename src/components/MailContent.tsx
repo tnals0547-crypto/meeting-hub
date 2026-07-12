@@ -366,11 +366,13 @@ function MeetingDetailContent({
   mail,
   meeting,
   onBack,
+  returnTo,
   showBack = true,
 }: {
   mail: MailItem
   meeting: Meeting
   onBack: () => void
+  returnTo: string
   showBack?: boolean
 }) {
   const participantSummary = useMemo(() => {
@@ -384,21 +386,22 @@ function MeetingDetailContent({
     ? '응답 확인'
     : mail.type === 'meeting_request' ? '참석자'
     : meeting.myRole === 'organizer' ? '주최자' : '참석자'
+  const encodedReturnTo = encodeURIComponent(returnTo)
 
   const ctaConfig: Record<MailType, { text: string; href: string; description: string } | null> = {
     meeting_request: {
       text: '참석 요청 응답',
-      href: `/meetings/${mail.meetingId}?view=respond&mail=${mail.id}`,
+      href: `/meetings/${mail.meetingId}?view=respond&mail=${mail.id}&returnTo=${encodedReturnTo}`,
       description: '참석 여부를 선택해주세요.',
     },
     replacement_needed: {
       text: '대체 참석자 확인',
-      href: `/meetings/${mail.meetingId}/replacement?mail=${mail.id}`,
+      href: `/meetings/${mail.meetingId}/replacement?mail=${mail.id}&returnTo=${encodedReturnTo}`,
       description: '필수 참석자가 불참했습니다. 대체 참석자를 선택해주세요.',
     },
     response_update: {
       text: '응답 현황 보기',
-      href: `/meetings/${mail.meetingId}?view=response-status&mail=${mail.id}`,
+      href: `/meetings/${mail.meetingId}?view=response-status&mail=${mail.id}&returnTo=${encodedReturnTo}`,
       description: `${participantSummary.pending}명이 아직 응답하지 않았습니다.`,
     },
     meeting_confirmed: {
@@ -691,12 +694,14 @@ function getMailSearchParts(mail: MailItem) {
 
 function MailContentInner({
   initialFolder,
+  initialMailId,
   searchQuery = '',
 }: {
   initialFolder?: Folder
+  initialMailId?: string
   searchQuery?: string
 }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(initialMailId ?? null)
   const [activeFolder, setActiveFolder] = useState<Folder>(initialFolder ?? 'all')
   const storedMailStates = useSyncExternalStore(
     subscribeStoredMailStates,
@@ -739,6 +744,15 @@ function MailContentInner({
 
   function countByType(type: MailType) {
     return mailList.filter((m) => m.type === type && (type === 'regular' || isActionPending(m))).length
+  }
+
+  function getMailReturnPath(mailId: string) {
+    const params = new URLSearchParams()
+    if (activeFolder !== 'all') params.set('folder', activeFolder)
+    if (searchQuery) params.set('q', searchQuery)
+    params.set('mail', mailId)
+    const query = params.toString()
+    return query ? `/?${query}` : '/'
   }
 
   return (
@@ -842,7 +856,7 @@ function MailContentInner({
             <div className="relative flex h-[88dvh] max-h-[calc(100dvh-24px)] w-full flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl">
               <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-gray-200" />
               <div className="min-h-0 flex-1 overflow-y-auto">
-                <DetailContent mail={selected} onBack={() => selectMail(null)} showBack={false} />
+                <DetailContent mail={selected} onBack={() => selectMail(null)} returnTo={getMailReturnPath(selected.id)} showBack={false} />
               </div>
             </div>
           </div>
@@ -900,7 +914,7 @@ function MailContentInner({
         hasSelected ? 'min-w-0 flex-1' : 'w-[420px] shrink-0'
       }`}>
         {selected ? (
-          <DetailContent mail={selected} onBack={() => selectMail(null)} />
+          <DetailContent mail={selected} onBack={() => selectMail(null)} returnTo={getMailReturnPath(selected.id)} />
         ) : (
           <EmptyStateDetail mailItems={mailList} onSelectMail={selectMail} />
         )}
@@ -911,15 +925,18 @@ function MailContentInner({
 
 export default function MailContent({
   initialFolder,
+  initialMailId,
   searchQuery,
 }: {
   initialFolder?: Folder
+  initialMailId?: string
   searchQuery?: string
 }) {
   return (
     <MailContentInner
-      key={initialFolder ?? 'all'}
+      key={`${initialFolder ?? 'all'}-${initialMailId ?? 'none'}`}
       initialFolder={initialFolder}
+      initialMailId={initialMailId}
       searchQuery={searchQuery}
     />
   )
@@ -928,15 +945,17 @@ export default function MailContent({
 function DetailContent({
   mail,
   onBack,
+  returnTo,
   showBack = true,
 }: {
   mail: MailItem
   onBack: () => void
+  returnTo: string
   showBack?: boolean
 }) {
   const meeting = getMailMeeting(mail)
   if (mail.type !== 'regular' && meeting) {
-    return <MeetingDetailContent mail={mail} meeting={meeting} onBack={onBack} showBack={showBack} />
+    return <MeetingDetailContent mail={mail} meeting={meeting} onBack={onBack} returnTo={returnTo} showBack={showBack} />
   }
   return <RegularDetailContent mail={mail} onBack={onBack} showBack={showBack} />
 }
