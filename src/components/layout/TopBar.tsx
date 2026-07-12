@@ -1,13 +1,39 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Plus, Bell, Search, CircleUserRound, CalendarCheck, Mail, UserRound } from 'lucide-react'
 
 type TopBarPopover = 'notifications' | 'profile' | null
 
 export default function TopBar() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [activePopover, setActivePopover] = useState<TopBarPopover>(null)
+  const searchTimeoutRef = useRef<number | null>(null)
+  const currentSearchQuery = searchParams.get('q') ?? ''
+
+  function handleSearchChange(value: string) {
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current)
+    }
+
+    searchTimeoutRef.current = window.setTimeout(() => {
+      const nextParams = new URLSearchParams(searchParams.toString())
+      const normalizedSearch = value.trim()
+
+      if (normalizedSearch) {
+        nextParams.set('q', normalizedSearch)
+      } else {
+        nextParams.delete('q')
+      }
+
+      const queryString = nextParams.toString()
+      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false })
+    }, 250)
+  }
 
   return (
     <header className="relative flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 lg:px-5">
@@ -31,7 +57,10 @@ export default function TopBar() {
         <div className="hidden md:relative md:block">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
+            key={currentSearchQuery}
             type="search"
+            defaultValue={currentSearchQuery}
+            onChange={(event) => handleSearchChange(event.target.value)}
             placeholder="메일, 회의, 참석자 검색"
             className="h-9 w-[320px] rounded-[8px] border border-gray-200 bg-gray-50 pl-9 pr-3 text-body-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-gray-300 focus:bg-white"
           />

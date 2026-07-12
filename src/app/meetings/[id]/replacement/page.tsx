@@ -2,15 +2,17 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { ArrowRight, CheckCircle, Check, AlertTriangle, AlertCircle, Send, ArrowLeft, UserCheck } from 'lucide-react'
 import { meetings } from '@/data/mock'
-import type { Meeting, ReplacementCandidate, AvailabilityStatus, TimeSlot } from '@/types/meeting'
+import type { Meeting, Participant, ReplacementCandidate, AvailabilityStatus, TimeSlot } from '@/types/meeting'
 import StatusBadge from '@/components/common/StatusBadge'
 import Button from '@/components/common/Button'
 import EmptyState from '@/components/common/EmptyState'
 import ErrorState from '@/components/common/ErrorState'
 import PageLayout from '@/components/layout/PageLayout'
+import { readStoredMeeting, writeStoredMeeting } from '@/lib/meetingStore'
+import { writeStoredMailState } from '@/lib/mailStore'
 
 const AVAILABILITY: Record<AvailabilityStatus, { dotClass: string; label: string }> = {
   available: { dotClass: 'bg-success', label: '지금 연락 가능' },
@@ -397,7 +399,7 @@ function SuccessStep({
       </p>
 
       <div className="mt-6">
-        <Button href={`/meetings/${meeting.id}`} className="w-full">
+        <Button href={`/meetings/${meeting.id}?source=stored`} className="w-full">
           회의 현황으로 돌아가기
         </Button>
       </div>
@@ -412,9 +414,15 @@ export default function ReplacementPage() {
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const params = useParams()
+  const searchParams = useSearchParams()
   const id = params.id as string
+  const sourceMailId = searchParams.get('mail') ?? undefined
 
-  const meeting = meetings.find((m) => m.id === id)
+  const mockMeeting = meetings.find((m) => m.id === id)
+  const [meetingState, setMeetingState] = useState<Meeting | null>(() =>
+    mockMeeting ? readStoredMeeting(id) ?? mockMeeting : null,
+  )
+  const meeting = meetingState
   const candidates = meeting?.replacementCandidates ?? []
   const rankedCandidates = sortCandidatesByMeetingTime(candidates, meeting?.confirmedTimeSlot ?? null)
   const selected = candidates.find((c) => c.id === selectedId) ?? null
@@ -467,9 +475,43 @@ export default function ReplacementPage() {
   }
 
   function handleConfirm() {
+    if (!meeting) return
+    const currentMeeting = meeting
+    const currentCandidate = currentPrimary
     setConfirming(true)
     setError(null)
     setTimeout(() => {
+      const declinedRequired = currentMeeting.participants.find(
+        (participant) => participant.isRequired && participant.responseStatus === 'declined',
+      )
+      const replacementParticipant: Participant = {
+        id: `replacement-${currentCandidate.id}`,
+        name: currentCandidate.name,
+        department: currentCandidate.department,
+        role: currentCandidate.role,
+        responseStatus: 'pending',
+        respondedAt: null,
+        isRequired: true,
+      }
+      const participants = [
+        ...currentMeeting.participants.map((participant) =>
+          declinedRequired && participant.id === declinedRequired.id
+            ? { ...participant, isRequired: false }
+            : participant,
+        ),
+        replacementParticipant,
+      ]
+      const nextMeeting: Meeting = {
+        ...currentMeeting,
+        status: 'response_collecting',
+        participants,
+      }
+
+      setMeetingState(nextMeeting)
+      writeStoredMeeting(nextMeeting)
+      if (sourceMailId) {
+        writeStoredMailState(sourceMailId, { isRead: true, actionState: 'response_waiting' })
+      }
       setConfirming(false)
       setStep(2)
     }, 1000)

@@ -1,8 +1,22 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useMemo, useSyncExternalStore } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { meetings } from '@/data/mock'
+import {
+  getStoredMeetingsServerSnapshot,
+  getStoredMeetingsSnapshot,
+  mergeMeetings,
+  subscribeStoredMeetings,
+} from '@/lib/meetingStore'
+import {
+  getMailTotalCount,
+  getPendingMailActionCount,
+  getStoredMailStatesServerSnapshot,
+  getStoredMailStatesSnapshot,
+  subscribeStoredMailStates,
+} from '@/lib/mailStore'
 
 const MAIL_ITEMS = [
   { label: '전체', href: '/' },
@@ -23,7 +37,6 @@ const CALENDAR_ITEMS = [
 const MEETINGS_ITEMS = [
   { label: '진행 중', href: '/meetings' },
   { label: '참석 요청 전', href: '/meetings?filter=pending' },
-  { label: '미응답 있음', href: '/meetings?filter=response_collecting' },
   { label: '대체 참석 필요', href: '/meetings?filter=response_complete' },
   { label: '회의 기록', href: '/meetings?filter=completed' },
 ]
@@ -95,15 +108,45 @@ const SECTION_META: Record<
   },
 }
 
+type SectionMeta = typeof SECTION_META
+
 function LNBContent() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const storedMailStates = useSyncExternalStore(
+    subscribeStoredMailStates,
+    getStoredMailStatesSnapshot,
+    getStoredMailStatesServerSnapshot,
+  )
+  const storedMeetings = useSyncExternalStore(
+    subscribeStoredMeetings,
+    getStoredMeetingsSnapshot,
+    getStoredMeetingsServerSnapshot,
+  )
+  const allMeetings = useMemo(() => mergeMeetings(meetings, storedMeetings), [storedMeetings])
+  const dynamicMeta = useMemo<SectionMeta>(() => ({
+    ...SECTION_META,
+    mail: {
+      title: '메일',
+      summary: [
+        { label: '전체', value: String(getMailTotalCount()) },
+        { label: '확인 필요', value: String(getPendingMailActionCount(storedMailStates)) },
+      ],
+    },
+    meetings: {
+      title: '회의',
+      summary: [
+        { label: '진행 중', value: String(allMeetings.filter((meeting) => meeting.status !== 'completed').length) },
+        { label: '기록', value: String(allMeetings.filter((meeting) => meeting.status === 'completed').length) },
+      ],
+    },
+  }), [allMeetings, storedMailStates])
 
   const section = getSection(pathname)
   if (!section) return null
 
   const items = SECTION_ITEMS[section]
-  const meta = SECTION_META[section]
+  const meta = dynamicMeta[section]
 
   return (
     <nav className="hidden w-60 shrink-0 border-r border-gray-200 bg-white lg:flex lg:flex-col">

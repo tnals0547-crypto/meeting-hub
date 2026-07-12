@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Plus, X, MapPin, Clock, CheckCircle, XCircle
 import { mockScheduleDates, teamMembers } from '@/data/mock'
 import { generateTimeSlots, sortSlots } from '@/data/availability'
 import { getCalendarBaseDate } from '@/lib/date'
+import { matchesSearch, normalizeSearchQuery } from '@/lib/search'
 import type { TeamMember, MeetingDuration } from '@/types/meeting'
 import Button from '@/components/common/Button'
 import MemberSelector from '@/components/MemberSelector'
@@ -180,6 +181,26 @@ function clampEventStart(start: number, duration: number) {
 function eventOverlapsSlot(event: CalendarEvent, date: string, startTime: string, endTime: string) {
   if (event.date !== date) return false
   return timeToMinutes(startTime) < timeToMinutes(event.endTime) && timeToMinutes(endTime) > timeToMinutes(event.startTime)
+}
+
+function getEventSearchParts(event: CalendarEvent | MeetingEvent) {
+  return [
+    event.title,
+    EVENT_TYPE_LABEL[event.type],
+    event.location,
+    event.description,
+    event.date,
+    event.startTime,
+    event.endTime,
+    event.myStatus,
+    ...(isMeetingEvent(event)
+      ? [
+          ...event.requiredMembers.flatMap((member) => [member.name, member.department, member.role]),
+          ...event.optionalMembers.flatMap((member) => [member.name, member.department, member.role]),
+          ...event.participantResponses.flatMap((response) => [response.name, response.status]),
+        ]
+      : []),
+  ]
 }
 
 function getDisplayInterval(event: CalendarEvent, dragState: DragState | null, resizeState: ResizeState | null) {
@@ -720,6 +741,9 @@ function CalendarPageContent() {
   const resizeStateRef = useRef<ResizeState | null>(null)
   const suppressClickRef = useRef<string | null>(null)
   const rawFilter = searchParams.get('filter')
+  const searchQuery = searchParams.get('q') ?? ''
+  const normalizedSearchQuery = normalizeSearchQuery(searchQuery)
+  const hasSearchQuery = Boolean(normalizedSearchQuery)
   const calendarFilter: CalendarFilter = rawFilter === 'meeting'
     || rawFilter === 'focus'
     || rawFilter === 'external'
@@ -748,9 +772,14 @@ function CalendarPageContent() {
       if (!dateStrs.has(event.date)) return false
       if (event.type !== 'vacation' && vacationDateStrs.has(event.date)) return false
       if (calendarFilter !== 'all' && event.type !== calendarFilter) return false
+      if (!matchesSearch(getEventSearchParts(event), searchQuery)) return false
       return true
     })
-  }, [calendarFilter, events, vacationDateStrs, weekDays])
+  }, [calendarFilter, events, searchQuery, vacationDateStrs, weekDays])
+
+  const visibleSelectedEvent = selectedEvent && weekEvents.some((event) => event.id === selectedEvent.id)
+    ? selectedEvent
+    : null
 
   const goPrevWeek = useCallback(() => {
     const d = new Date(baseDate)
@@ -960,12 +989,12 @@ function CalendarPageContent() {
   }, [])
 
   const handleEditEvent = useCallback(() => {
-    if (selectedEvent) {
-      setEditEvent(selectedEvent)
+    if (visibleSelectedEvent) {
+      setEditEvent(visibleSelectedEvent)
       setShowForm(true)
       setSelectedEvent(null)
     }
-  }, [selectedEvent])
+  }, [visibleSelectedEvent])
 
   const getEventsForDay = useCallback((dateStr: string) => {
     return weekEvents.filter((e) => e.date === dateStr)
@@ -1159,15 +1188,29 @@ function CalendarPageContent() {
             {weekEvents.length === 0 && (
               <div className="border-t border-gray-100 bg-white px-6 py-10 text-center">
                 <CalendarDays className="mx-auto h-8 w-8 text-gray-300" />
-                <p className="mt-2 text-body-sm font-medium text-gray-700">{pageModeLabel}이 없습니다</p>
-                <p className="mt-1 text-body-sm text-gray-500">다른 필터를 선택하거나 새 일정을 추가해보세요.</p>
+                <p className="mt-2 text-body-sm font-medium text-gray-700">
+                  {hasSearchQuery ? '검색 결과가 없습니다' : `${pageModeLabel}이 없습니다`}
+                </p>
+                <p className="mt-1 text-body-sm text-gray-500">
+                  {hasSearchQuery ? `"${searchQuery}"에 맞는 일정을 찾지 못했습니다.` : '다른 필터를 선택하거나 새 일정을 추가해보세요.'}
+                </p>
               </div>
             )}
           </div>
 
           {/* Mobile: date list */}
           <div className="flex flex-col lg:hidden">
-            {weekDays.map((day) => {
+            {weekEvents.length === 0 ? (
+              <div className="bg-white px-6 py-16 text-center">
+                <CalendarDays className="mx-auto h-8 w-8 text-gray-300" />
+                <p className="mt-2 text-title font-semibold text-gray-900">
+                  {hasSearchQuery ? '검색 결과가 없습니다' : `${pageModeLabel}이 없습니다`}
+                </p>
+                <p className="mt-1 text-body-sm text-gray-500">
+                  {hasSearchQuery ? `"${searchQuery}"에 맞는 일정을 찾지 못했습니다.` : '다른 필터를 선택하거나 새 일정을 추가해보세요.'}
+                </p>
+              </div>
+            ) : weekDays.map((day) => {
               const dayEvents = getRenderableEventsForDay(day.dateStr)
               return (
                 <div key={day.dateStr} className="border-b border-gray-100 bg-white px-4 py-3">
@@ -1191,7 +1234,7 @@ function CalendarPageContent() {
                           key={evt.id}
                           onClick={() => handleSelectEvent(evt)}
                           className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
-                            selectedEvent?.id === evt.id ? 'bg-gray-100' : 'hover:bg-gray-50'
+                            visibleSelectedEvent?.id === evt.id ? 'bg-gray-100' : 'hover:bg-gray-50'
                           }`}
                         >
                           <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${typeDot[evt.type]}`} />
@@ -1235,10 +1278,10 @@ function CalendarPageContent() {
         </div>
 
         {/* Right detail panel (desktop) / bottom sheet (mobile) */}
-        {selectedEvent && (
+        {visibleSelectedEvent && (
           <>
             <div className="hidden border-l border-gray-200 bg-white lg:block lg:w-[360px] lg:shrink-0">
-              <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} onEdit={handleEditEvent} />
+              <EventDetailPanel event={visibleSelectedEvent} onClose={() => setSelectedEvent(null)} onEdit={handleEditEvent} />
             </div>
             <div className="fixed inset-0 z-50 flex items-end bg-gray-900/35 lg:hidden" role="dialog" aria-modal="true">
               <button
@@ -1249,7 +1292,7 @@ function CalendarPageContent() {
               />
               <div className="relative flex h-[78dvh] max-h-[calc(100dvh-24px)] w-full flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl">
                 <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-gray-200" />
-                <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} onEdit={handleEditEvent} />
+                <EventDetailPanel event={visibleSelectedEvent} onClose={() => setSelectedEvent(null)} onEdit={handleEditEvent} />
               </div>
             </div>
           </>
@@ -1285,7 +1328,7 @@ function CalendarPageContent() {
         )}
 
         {/* Empty state (when no selection and no form) */}
-        {!selectedEvent && !showForm && (
+        {!visibleSelectedEvent && !showForm && (
           <div className="hidden items-center justify-center border-l border-gray-200 bg-white p-8 lg:flex lg:w-[360px] lg:shrink-0">
             <div className="text-center">
               <CalendarDays className="mx-auto h-10 w-10 text-gray-300" />

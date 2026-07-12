@@ -10,6 +10,7 @@ import { ArrowRight, Users, CheckCircle, XCircle, HelpCircle, Calendar, MapPin, 
 interface MeetingPreviewProps {
   meeting: Meeting
   onRespond?: (meetingId: string, response: 'approved' | 'declined') => void
+  onSendRequests?: (meetingId: string) => void
 }
 
 function formatDate(dateString: string) {
@@ -31,7 +32,7 @@ function formatMeetingDate(meeting: Meeting) {
   return formatDate(meeting.createdAt)
 }
 
-export default function MeetingPreview({ meeting, onRespond }: MeetingPreviewProps) {
+export default function MeetingPreview({ meeting, onRespond, onSendRequests }: MeetingPreviewProps) {
   const approved = meeting.participants.filter((p) => p.responseStatus === 'approved').length
   const declined = meeting.participants.filter((p) => p.responseStatus === 'declined').length
   const pending = meeting.participants.filter((p) => p.responseStatus === 'pending').length
@@ -276,10 +277,21 @@ export default function MeetingPreview({ meeting, onRespond }: MeetingPreviewPro
       </div>
 
       <div className="mt-4">
-        <Button href={action.href} variant="primary" className="w-full justify-between">
-          <span>{action.text}</span>
-          <ArrowRight className="h-5 w-5" />
-        </Button>
+        {meeting.status === 'pending' ? (
+          <Button
+            onClick={() => onSendRequests?.(meeting.id)}
+            variant="primary"
+            className="w-full justify-between"
+          >
+            <span>{action.text}</span>
+            <ArrowRight className="h-5 w-5" />
+          </Button>
+        ) : (
+          <Button href={action.href} variant="primary" className="w-full justify-between">
+            <span>{action.text}</span>
+            <ArrowRight className="h-5 w-5" />
+          </Button>
+        )}
       </div>
     </div>
   )

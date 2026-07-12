@@ -1,8 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import type { Meeting } from '@/types/meeting'
 import MeetingCard from '@/components/MeetingCard'
+import {
+  getStoredMeetingsServerSnapshot,
+  getStoredMeetingsSnapshot,
+  mergeMeetings,
+  subscribeStoredMeetings,
+} from '@/lib/meetingStore'
 
 interface MeetingListProps {
   initialMeetings: Meeting[]
@@ -15,32 +21,16 @@ const statusPriority: Record<string, number> = {
   confirmed: 3,
 }
 
-function readStoredMeetings() {
-  const meetings: Meeting[] = []
-  if (typeof window === 'undefined') return meetings
-
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const key = sessionStorage.key(i)
-    if (key && key.startsWith('meeting-') && key !== 'newMeetingForm') {
-      try {
-        const data = JSON.parse(sessionStorage.getItem(key)!)
-        if (!data.myRole) data.myRole = 'organizer'
-        meetings.push(data)
-      } catch {
-        /* ignore parse errors */
-      }
-    }
-  }
-
-  return meetings
-}
-
 export default function MeetingList({ initialMeetings }: MeetingListProps) {
-  const [dynamicMeetings] = useState<Meeting[]>(() => readStoredMeetings())
+  const dynamicMeetings = useSyncExternalStore(
+    subscribeStoredMeetings,
+    getStoredMeetingsSnapshot,
+    getStoredMeetingsServerSnapshot,
+  )
 
-  const dynamicIds = new Set(dynamicMeetings.map((m) => m.id))
+  const dynamicIds = useMemo(() => new Set(dynamicMeetings.map((m) => m.id)), [dynamicMeetings])
 
-  const allMeetings = [...dynamicMeetings, ...initialMeetings].sort((a, b) => {
+  const allMeetings = mergeMeetings(initialMeetings, dynamicMeetings).sort((a, b) => {
     const aDynamic = dynamicIds.has(a.id)
     const bDynamic = dynamicIds.has(b.id)
     if (aDynamic && !bDynamic) return -1

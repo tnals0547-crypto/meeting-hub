@@ -1,10 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { PanelLeft, X, ArrowRight } from 'lucide-react'
 import { meetings as mockMeetings } from '@/data/mock'
-import type { Meeting } from '@/types/meeting'
+import {
+  getStoredMeetingsServerSnapshot,
+  getStoredMeetingsSnapshot,
+  mergeMeetings,
+  subscribeStoredMeetings,
+} from '@/lib/meetingStore'
 
 const scheduleItems = [
   { time: '09:00', title: '데일리 스크럼', bar: 'bg-warning' },
@@ -31,26 +36,6 @@ const statusLabel: Record<string, string> = {
   confirmed: '확정 완료',
 }
 
-function readAllMeetings() {
-  const stored: Meeting[] = [...mockMeetings]
-  if (typeof window === 'undefined') return stored
-
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const key = sessionStorage.key(i)
-    if (key && key.startsWith('meeting-') && key !== 'newMeetingForm') {
-      try {
-        const data = JSON.parse(sessionStorage.getItem(key)!)
-        if (!data.myRole) data.myRole = 'organizer'
-        stored.push(data)
-      } catch {
-        /* ignore */
-      }
-    }
-  }
-
-  return stored
-}
-
 export default function Workspace({
   isOpen,
   onClose,
@@ -58,7 +43,15 @@ export default function Workspace({
   isOpen: boolean
   onClose: () => void
 }) {
-  const [allMeetings] = useState<Meeting[]>(() => readAllMeetings())
+  const storedMeetings = useSyncExternalStore(
+    subscribeStoredMeetings,
+    getStoredMeetingsSnapshot,
+    getStoredMeetingsServerSnapshot,
+  )
+  const allMeetings = useMemo(
+    () => mergeMeetings(mockMeetings, storedMeetings),
+    [storedMeetings],
+  )
 
   const actionRequired = allMeetings.filter(
     (m) =>

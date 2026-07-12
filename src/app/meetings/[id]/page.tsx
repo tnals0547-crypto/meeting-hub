@@ -10,6 +10,7 @@ import ParticipantList from '@/components/ParticipantList'
 import ConfirmConditions from '@/components/ConfirmConditions'
 import PageLayout from '@/components/layout/PageLayout'
 import DynamicMeetingPage from './DynamicMeetingPage'
+import StoreMeetingSnapshot from '@/components/StoreMeetingSnapshot'
 
 function formatDate(dateString: string) {
   const date = new Date(dateString)
@@ -124,9 +125,10 @@ export default async function MeetingProgressPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const { id } = await params
-  const { source, view, response } = await searchParams
+  const { source, view, response, mail } = await searchParams
+  const sourceMailId = typeof mail === 'string' ? mail : undefined
 
-  if (source === 'new') {
+  if (source === 'new' || source === 'stored') {
     return <DynamicMeetingPage id={id} />
   }
 
@@ -280,6 +282,7 @@ export default async function MeetingProgressPage({
   const isConfirmed = viewMeeting.status === 'confirmed'
   const needsReplacement = viewMeeting.status === 'response_complete' && hasDeclinedRequired
   const pageRole = isResponseStatusView ? 'organizer' : isRespondView ? 'participant' : viewMeeting.myRole
+  const responseMailQuery = sourceMailId ? `&mail=${sourceMailId}` : ''
 
   const headerSection = (
     <>
@@ -339,11 +342,11 @@ export default async function MeetingProgressPage({
         <>
           <p className="mt-1 text-body-sm text-gray-500">참석 여부를 선택해주세요.</p>
           <div className="mt-3 flex gap-2">
-            <Button href={`/meetings/${meeting.id}?view=respond&response=approved`} variant="primary" className="flex-1 gap-1.5">
+            <Button href={`/meetings/${meeting.id}?view=respond&response=approved${responseMailQuery}`} variant="primary" className="flex-1 gap-1.5">
               <CheckCircle className="h-4 w-4" />
               <span>참석</span>
             </Button>
-            <Button href={`/meetings/${meeting.id}?view=respond&response=declined`} variant="secondary" className="flex-1 gap-1.5">
+            <Button href={`/meetings/${meeting.id}?view=respond&response=declined${responseMailQuery}`} variant="secondary" className="flex-1 gap-1.5">
               <XCircle className="h-4 w-4" />
               <span>불참</span>
             </Button>
@@ -394,6 +397,9 @@ export default async function MeetingProgressPage({
 
   return (
     <div className="flex min-h-full flex-col bg-gray-50">
+      {(responseChoice || (sourceMailId && isResponseStatusView)) && (
+        <StoreMeetingSnapshot meeting={viewMeeting} mailId={sourceMailId} />
+      )}
       <div className="w-full border-b border-gray-200 bg-white px-6 py-5">
         <Link
           href="/meetings"

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { CheckCircle, HelpCircle, XCircle, AlertCircle, Calendar, Archive } from 'lucide-react'
 import type { Meeting } from '@/types/meeting'
@@ -8,37 +8,19 @@ import MeetingTable from '@/components/MeetingTable'
 import MeetingPreview from '@/components/MeetingPreview'
 import Button from '@/components/common/Button'
 import PageLayout from '@/components/layout/PageLayout'
+import {
+  getStoredMeetingsServerSnapshot,
+  getStoredMeetingsSnapshot,
+  mergeMeetings,
+  subscribeStoredMeetings,
+  writeStoredMeeting,
+} from '@/lib/meetingStore'
+import { getMeetingSearchParts, matchesSearch, normalizeSearchQuery } from '@/lib/search'
 
 interface HomeContentProps {
   meetings: Meeting[]
   initialFilter?: string
-}
-
-function readStoredMeetings() {
-  const stored: Meeting[] = []
-  if (typeof window === 'undefined') return stored
-
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const key = sessionStorage.key(i)
-    if (key && key.startsWith('meeting-') && key !== 'newMeetingForm') {
-      try {
-        const data = JSON.parse(sessionStorage.getItem(key)!)
-        if (!data.myRole) data.myRole = 'organizer'
-        stored.push(data)
-      } catch {
-        /* ignore */
-      }
-    }
-  }
-
-  return stored
-}
-
-function mergeMeetings(baseMeetings: Meeting[], storedMeetings: Meeting[]) {
-  const merged = new Map<string, Meeting>()
-  baseMeetings.forEach((meeting) => merged.set(meeting.id, meeting))
-  storedMeetings.forEach((meeting) => merged.set(meeting.id, meeting))
-  return Array.from(merged.values())
+  searchQuery?: string
 }
 
 const stepLabel: Record<string, { icon: React.ReactNode; text: string; className: string }> = {
@@ -49,7 +31,7 @@ const stepLabel: Record<string, { icon: React.ReactNode; text: string; className
   },
   response_collecting: {
     icon: <AlertCircle className="h-3.5 w-3.5" />,
-    text: '미응답 있음',
+    text: '응답 확인 중',
     className: 'border border-warning/15 bg-warning-bg text-warning',
   },
   response_complete: {
@@ -69,44 +51,57 @@ const stepLabel: Record<string, { icon: React.ReactNode; text: string; className
   },
 }
 
-export default function HomeContent({ meetings, initialFilter }: HomeContentProps) {
-  const [meetingItems, setMeetingItems] = useState<Meeting[]>(() =>
-    mergeMeetings(meetings, readStoredMeetings()),
+export default function HomeContent({ meetings, initialFilter, searchQuery = '' }: HomeContentProps) {
+  const storedMeetings = useSyncExternalStore(
+    subscribeStoredMeetings,
+    getStoredMeetingsSnapshot,
+    getStoredMeetingsServerSnapshot,
   )
+  const meetingItems = useMemo(() => mergeMeetings(meetings, storedMeetings), [meetings, storedMeetings])
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   function handleRespond(meetingId: string, response: 'approved' | 'declined') {
-    setMeetingItems((current) =>
-      current.map((meeting) => {
-        if (meeting.id !== meetingId) return meeting
+    const meeting = meetingItems.find((item) => item.id === meetingId)
+    if (!meeting) return
 
-        let updatedOne = false
-        const participants = meeting.participants.map((participant) => {
-          if (updatedOne || participant.responseStatus !== 'pending') return participant
-          updatedOne = true
-          return {
-            ...participant,
-            responseStatus: response,
-            respondedAt: new Date().toISOString(),
-          }
-        })
+    let updatedOne = false
+    const participants = meeting.participants.map((participant) => {
+      if (updatedOne || participant.responseStatus !== 'pending') return participant
+      updatedOne = true
+      return {
+        ...participant,
+        responseStatus: response,
+        respondedAt: new Date().toISOString(),
+      }
+    })
 
-        if (!updatedOne) return meeting
+    if (!updatedOne) return
 
-        const hasPending = participants.some((participant) => participant.responseStatus === 'pending')
-        const nextMeeting: Meeting = {
-          ...meeting,
-          participants,
-          status: hasPending ? meeting.status : 'response_complete',
-        }
-
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem(`meeting-${meetingId}`, JSON.stringify(nextMeeting))
-        }
-
-        return nextMeeting
-      }),
+    const hasPending = participants.some((participant) => participant.responseStatus === 'pending')
+    const hasDeclinedRequired = participants.some(
+      (participant) => participant.isRequired && participant.responseStatus === 'declined',
     )
+    const nextMeeting: Meeting = {
+      ...meeting,
+      participants,
+      status: hasPending
+        ? 'response_collecting'
+        : hasDeclinedRequired ? 'response_complete' : 'confirmed',
+    }
+
+    writeStoredMeeting(nextMeeting)
+  }
+
+  function handleSendRequests(meetingId: string) {
+    const meeting = meetingItems.find((item) => item.id === meetingId)
+    if (!meeting || meeting.status !== 'pending') return
+
+    const nextMeeting: Meeting = {
+      ...meeting,
+      status: 'response_collecting',
+    }
+
+    writeStoredMeeting(nextMeeting)
   }
 
   const allMeetingSource = [...meetingItems]
@@ -121,23 +116,31 @@ export default function HomeContent({ meetings, initialFilter }: HomeContentProp
       return (priority[a.status] ?? 9) - (priority[b.status] ?? 9)
     })
 
-  const activeFilter = initialFilter === 'confirmed' ? 'active' : initialFilter ?? 'active'
+  const activeFilter = initialFilter === 'confirmed' || initialFilter === 'response_collecting'
+    ? 'active'
+    : initialFilter ?? 'active'
   const allMeetings = allMeetingSource.filter((m) => {
     if (activeFilter === 'completed') return m.status === 'completed'
     if (activeFilter !== 'active') return m.status === activeFilter
     return m.status !== 'completed'
-  })
+  }).filter((meeting) => matchesSearch(getMeetingSearchParts(meeting), searchQuery))
 
   const pending = allMeetingSource.filter((m) => m.status === 'pending')
   const collecting = allMeetingSource.filter((m) => m.status === 'response_collecting')
   const replacement = allMeetingSource.filter((m) => m.status === 'response_complete')
   const completed = allMeetingSource.filter((m) => m.status === 'completed')
   const isRecordView = activeFilter === 'completed'
+  const normalizedSearchQuery = normalizeSearchQuery(searchQuery)
+  const hasSearchQuery = Boolean(normalizedSearchQuery)
 
   const selected = allMeetings.find((m) => m.id === selectedId) ?? allMeetings[0] ?? null
   const pageTitle = isRecordView ? '회의 기록' : '진행 중인 회의'
-  const emptyTitle = isRecordView ? '완료된 회의 기록이 없습니다' : '진행 중인 회의가 없습니다'
-  const emptyDescription = isRecordView ? '회의가 완료되면 회의록과 녹음/녹화 기록이 여기에 표시됩니다.' : '새로운 회의를 시작해보세요.'
+  const emptyTitle = hasSearchQuery
+    ? '검색 결과가 없습니다'
+    : isRecordView ? '완료된 회의 기록이 없습니다' : '진행 중인 회의가 없습니다'
+  const emptyDescription = hasSearchQuery
+    ? `"${searchQuery}"에 맞는 회의나 참석자를 찾지 못했습니다.`
+    : isRecordView ? '회의가 완료되면 회의록과 녹음/녹화 기록은 여기에 표시됩니다.' : '새로운 회의를 시작해보세요.'
 
   return (
     <>
@@ -202,7 +205,7 @@ export default function HomeContent({ meetings, initialFilter }: HomeContentProp
               </div>
               <h3 className="text-title font-semibold text-gray-900">{emptyTitle}</h3>
               <p className="mt-1.5 text-body-sm text-gray-500">{emptyDescription}</p>
-              {!isRecordView && (
+              {!isRecordView && !hasSearchQuery && (
                 <div className="mt-4">
                   <Button href="/meetings/new">회의 생성</Button>
                 </div>
@@ -216,7 +219,13 @@ export default function HomeContent({ meetings, initialFilter }: HomeContentProp
       <div className="hidden min-h-0 flex-1 lg:block">
         <PageLayout
           hideSidebar
-          right={selected && <MeetingPreview meeting={selected} onRespond={handleRespond} />}
+          right={selected && (
+            <MeetingPreview
+              meeting={selected}
+              onRespond={handleRespond}
+              onSendRequests={handleSendRequests}
+            />
+          )}
         >
           <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
@@ -245,7 +254,7 @@ export default function HomeContent({ meetings, initialFilter }: HomeContentProp
                 </div>
                 <h3 className="text-title font-semibold text-gray-900">{emptyTitle}</h3>
                 <p className="mt-1 text-body-sm text-gray-500">{emptyDescription}</p>
-                {!isRecordView && (
+                {!isRecordView && !hasSearchQuery && (
                   <div className="mt-4">
                     <Button href="/meetings/new">회의 생성</Button>
                   </div>

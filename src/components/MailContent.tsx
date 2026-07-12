@@ -1,10 +1,19 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Mail, CalendarDays, Users, Clock, CheckCircle, XCircle, HelpCircle, AlertCircle, FileText } from 'lucide-react'
 import { meetings } from '@/data/mock'
 import type { ResponseStatus, Meeting } from '@/types/meeting'
+import { getMeetingSearchParts, matchesSearch, normalizeSearchQuery } from '@/lib/search'
+import {
+  getStoredMailStatesServerSnapshot,
+  getStoredMailStatesSnapshot,
+  mergeStoredMailStates,
+  subscribeStoredMailStates,
+  writeStoredMailState,
+} from '@/lib/mailStore'
+import type { MailActionState } from '@/lib/mailStore'
 
 type MailType =
   | 'replacement_needed'
@@ -32,6 +41,7 @@ interface MailItem {
   meetingId: string
   receivedAt: string
   isRead: boolean
+  actionState?: MailActionState
   hasAttachment?: boolean
 }
 
@@ -49,6 +59,12 @@ const mailTypeLabel: Record<MailType, string> = {
   meeting_request: '참석 요청',
   meeting_confirmed: '확정 완료',
   regular: '',
+}
+
+const mailActionLabel: Record<MailActionState, string> = {
+  pending: '',
+  response_waiting: '응답대기',
+  processed: '처리됨',
 }
 
 const mailItems: MailItem[] = [
@@ -187,6 +203,12 @@ const typeStyles: Record<MailType, string> = {
   regular: 'bg-gray-50 text-gray-400 border border-gray-200',
 }
 
+const actionStateStyles: Record<MailActionState, string> = {
+  pending: '',
+  response_waiting: 'bg-info-bg text-info border border-info/15',
+  processed: 'bg-gray-100 text-gray-600 border border-gray-200',
+}
+
 export type Folder = 'all' | 'action_needed' | 'meeting_request' | 'replacement_needed' | 'regular'
 
 const folders: { key: Folder; label: string }[] = [
@@ -225,6 +247,25 @@ function getMailMeeting(mail: MailItem): Meeting | undefined {
   return mail.meetingId ? meetings.find((m) => m.id === mail.meetingId) : undefined
 }
 
+function getMailActionState(mail: MailItem): MailActionState {
+  if (mail.type === 'regular') return 'processed'
+  return mail.actionState ?? 'pending'
+}
+
+function isActionPending(mail: MailItem) {
+  return mail.type !== 'regular' && mail.type !== 'meeting_confirmed' && getMailActionState(mail) === 'pending'
+}
+
+function mailBadgeLabel(mail: MailItem) {
+  const state = getMailActionState(mail)
+  return state === 'pending' ? mailTypeLabel[mail.type] : mailActionLabel[state]
+}
+
+function mailBadgeClassName(mail: MailItem) {
+  const state = getMailActionState(mail)
+  return state === 'pending' ? typeStyles[mail.type] : actionStateStyles[state]
+}
+
 function MeetingMailRow({
   item,
   isSelected,
@@ -257,8 +298,8 @@ function MeetingMailRow({
             <span className={`truncate ${!item.isRead ? 'text-title font-semibold text-gray-900' : 'text-title font-medium text-gray-900'}`}>
               {item.from}
             </span>
-            <span className={`inline-flex h-6 shrink-0 items-center rounded-full px-2 text-caption font-medium ${typeStyles[item.type]}`}>
-              {mailTypeLabel[item.type]}
+            <span className={`inline-flex h-6 shrink-0 items-center rounded-full px-2 text-caption font-medium ${mailBadgeClassName(item)}`}>
+              {mailBadgeLabel(item)}
             </span>
             <span className="ml-auto shrink-0 text-body-sm text-gray-400 tabular-nums">
               {formatRelativeDate(item.receivedAt)}
@@ -269,7 +310,7 @@ function MeetingMailRow({
           </p>
           <p className="truncate mt-0.5 text-body-sm text-gray-500">{item.preview}</p>
           <div className="mt-2 flex items-center gap-1.5">
-            {!item.isRead && (
+            {isActionPending(item) && (
               <span className="inline-flex h-6 items-center rounded-full border border-warning/15 bg-warning-bg px-2 text-caption font-medium text-warning">
                 확인 필요
               </span>
@@ -347,17 +388,17 @@ function MeetingDetailContent({
   const ctaConfig: Record<MailType, { text: string; href: string; description: string } | null> = {
     meeting_request: {
       text: '참석 요청 응답',
-      href: `/meetings/${mail.meetingId}?view=respond`,
+      href: `/meetings/${mail.meetingId}?view=respond&mail=${mail.id}`,
       description: '참석 여부를 선택해주세요.',
     },
     replacement_needed: {
       text: '대체 참석자 확인',
-      href: `/meetings/${mail.meetingId}/replacement`,
+      href: `/meetings/${mail.meetingId}/replacement?mail=${mail.id}`,
       description: '필수 참석자가 불참했습니다. 대체 참석자를 선택해주세요.',
     },
     response_update: {
       text: '응답 현황 보기',
-      href: `/meetings/${mail.meetingId}?view=response-status`,
+      href: `/meetings/${mail.meetingId}?view=response-status&mail=${mail.id}`,
       description: `${participantSummary.pending}명이 아직 응답하지 않았습니다.`,
     },
     meeting_confirmed: {
@@ -555,9 +596,9 @@ function EmptyStateDetail({
   onSelectMail: (mailId: string) => void
 }) {
   const tasks = useMemo(() => {
-    const responseNeeded = mailItems.filter((m) => (m.type === 'meeting_request') && !m.isRead)
-    const replacementNeeded = mailItems.filter((m) => m.type === 'replacement_needed' && !m.isRead)
-    const organizerCheckNeeded = mailItems.filter((m) => m.type === 'response_update' && !m.isRead)
+    const responseNeeded = mailItems.filter((m) => m.type === 'meeting_request' && isActionPending(m))
+    const replacementNeeded = mailItems.filter((m) => m.type === 'replacement_needed' && isActionPending(m))
+    const organizerCheckNeeded = mailItems.filter((m) => m.type === 'response_update' && isActionPending(m))
     return { responseNeeded, replacementNeeded, organizerCheckNeeded }
   }, [mailItems])
 
@@ -635,33 +676,69 @@ function EmptyStateDetail({
   )
 }
 
-function MailContentInner({ initialFolder }: { initialFolder?: Folder }) {
+function getMailSearchParts(mail: MailItem) {
+  const meeting = getMailMeeting(mail)
+  return [
+    mail.from,
+    mail.fromOrg,
+    mail.title,
+    mail.preview,
+    mailTypeLabel[mail.type],
+    mailStageLabel[mail.type],
+    ...(meeting ? getMeetingSearchParts(meeting) : []),
+  ]
+}
+
+function MailContentInner({
+  initialFolder,
+  searchQuery = '',
+}: {
+  initialFolder?: Folder
+  searchQuery?: string
+}) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [activeFolder, setActiveFolder] = useState<Folder>(initialFolder ?? 'all')
+  const storedMailStates = useSyncExternalStore(
+    subscribeStoredMailStates,
+    getStoredMailStatesSnapshot,
+    getStoredMailStatesServerSnapshot,
+  )
+  const mailList = useMemo(() => mergeStoredMailStates(mailItems, storedMailStates), [storedMailStates])
+  const normalizedSearchQuery = normalizeSearchQuery(searchQuery)
+  const hasSearchQuery = Boolean(normalizedSearchQuery)
 
-  const meetingMails = useMemo(() => mailItems.filter((m) => m.type !== 'regular').sort((a, b) => a.priority - b.priority), [])
-  const regularMails = useMemo(() => mailItems.filter((m) => m.type === 'regular'), [])
+  const meetingMails = useMemo(() => mailList.filter((m) => m.type !== 'regular').sort((a, b) => a.priority - b.priority), [mailList])
+  const regularMails = useMemo(() => mailList.filter((m) => m.type === 'regular'), [mailList])
 
   const filtered = useMemo(() => {
-    let items = [...mailItems]
-    if (activeFolder === 'action_needed') items = items.filter((m) => m.type !== 'regular' && !m.isRead)
-    if (activeFolder === 'meeting_request') items = items.filter((m) => m.type === 'meeting_request')
-    if (activeFolder === 'replacement_needed') items = items.filter((m) => m.type === 'replacement_needed')
+    let items = [...mailList]
+    if (activeFolder === 'action_needed') items = items.filter((m) => isActionPending(m))
+    if (activeFolder === 'meeting_request') items = items.filter((m) => m.type === 'meeting_request' && isActionPending(m))
+    if (activeFolder === 'replacement_needed') items = items.filter((m) => m.type === 'replacement_needed' && isActionPending(m))
     if (activeFolder === 'regular') items = items.filter((m) => m.type === 'regular')
+    items = items.filter((mail) => matchesSearch(getMailSearchParts(mail), searchQuery))
     items.sort((a, b) => a.priority - b.priority)
     return items
-  }, [activeFolder])
+  }, [activeFolder, mailList, searchQuery])
 
   const selected = useMemo(
-    () => (selectedId ? mailItems.find((m) => m.id === selectedId) ?? null : null),
-    [selectedId],
+    () => (selectedId ? filtered.find((m) => m.id === selectedId) ?? null : null),
+    [filtered, selectedId],
   )
   const hasSelected = selected !== null
 
-  const actionNeededCount = useMemo(() => meetingMails.filter((m) => !m.isRead).length, [meetingMails])
+  const actionNeededCount = useMemo(() => meetingMails.filter((m) => isActionPending(m)).length, [meetingMails])
+
+  function selectMail(mailId: string | null) {
+    setSelectedId(mailId)
+    if (!mailId) return
+    const mail = mailList.find((item) => item.id === mailId)
+    if (!mail || mail.isRead) return
+    writeStoredMailState(mailId, { isRead: true })
+  }
 
   function countByType(type: MailType) {
-    return mailItems.filter((m) => m.type === type).length
+    return mailList.filter((m) => m.type === type && (type === 'regular' || isActionPending(m))).length
   }
 
   return (
@@ -677,11 +754,11 @@ function MailContentInner({ initialFolder }: { initialFolder?: Folder }) {
               : folder.key === 'regular' ? regularMails.length
               : folder.key === 'meeting_request' ? countByType('meeting_request')
               : folder.key === 'replacement_needed' ? countByType('replacement_needed')
-              : mailItems.length
+              : mailList.length
             return (
               <button
                 key={folder.key}
-                onClick={() => { setActiveFolder(folder.key); setSelectedId(null) }}
+                onClick={() => { setActiveFolder(folder.key); selectMail(null) }}
                 className={`whitespace-nowrap rounded-full px-3 py-1.5 text-body-sm font-medium transition-colors ${
                   isActive ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
@@ -696,7 +773,7 @@ function MailContentInner({ initialFolder }: { initialFolder?: Folder }) {
           return (
             <button
               key={item.id}
-              onClick={() => setSelectedId(item.id === selectedId ? null : item.id)}
+              onClick={() => selectMail(item.id === selectedId ? null : item.id)}
               className={`w-full rounded-xl border p-4 text-left transition-colors ${
                 selectedId === item.id ? 'border-gray-300 bg-gray-50' : 'border-gray-200 bg-white'
               } ${isMeeting && !item.isRead ? 'border-l-4 border-l-info' : ''}`}
@@ -704,8 +781,8 @@ function MailContentInner({ initialFolder }: { initialFolder?: Folder }) {
               <div className="flex items-center gap-2">
                 {!item.isRead && isMeeting && <span className="inline-block h-2 w-2 rounded-full bg-info shrink-0" />}
                 {isMeeting ? (
-                  <span className={`inline-flex h-6 items-center rounded-full px-2 text-caption font-medium ${typeStyles[item.type]}`}>
-                    {mailTypeLabel[item.type]}
+                  <span className={`inline-flex h-6 items-center rounded-full px-2 text-caption font-medium ${mailBadgeClassName(item)}`}>
+                    {mailBadgeLabel(item)}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-body-sm text-gray-400">
@@ -745,6 +822,15 @@ function MailContentInner({ initialFolder }: { initialFolder?: Folder }) {
             </button>
           )
         })}
+        {filtered.length === 0 && (
+          <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-white px-5 py-12 text-center">
+            <Mail className="h-8 w-8 text-gray-300" />
+            <p className="mt-3 text-title font-semibold text-gray-900">검색 결과가 없습니다</p>
+            <p className="mt-1 text-body-sm text-gray-500">
+              {hasSearchQuery ? `"${searchQuery}"에 맞는 메일을 찾지 못했습니다.` : '조건에 맞는 항목이 없습니다.'}
+            </p>
+          </div>
+        )}
         {selected && (
           <div className="fixed inset-0 z-50 flex items-end bg-gray-900/35 lg:hidden" role="dialog" aria-modal="true">
             <button
@@ -756,7 +842,7 @@ function MailContentInner({ initialFolder }: { initialFolder?: Folder }) {
             <div className="relative flex h-[88dvh] max-h-[calc(100dvh-24px)] w-full flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl">
               <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-gray-200" />
               <div className="min-h-0 flex-1 overflow-y-auto">
-                <DetailContent mail={selected} onBack={() => setSelectedId(null)} showBack={false} />
+                <DetailContent mail={selected} onBack={() => selectMail(null)} showBack={false} />
               </div>
             </div>
           </div>
@@ -770,7 +856,7 @@ function MailContentInner({ initialFolder }: { initialFolder?: Folder }) {
         <div className="border-b border-gray-200 px-5 py-4">
           <h1 className="text-heading-s font-semibold text-gray-900">받은 편지함</h1>
           <p className="mt-0.5 text-body-sm text-gray-400">
-            총 {mailItems.length}개 · 확인 필요 {actionNeededCount}
+            총 {mailList.length}개 · 확인 필요 {actionNeededCount}
           </p>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -782,7 +868,7 @@ function MailContentInner({ initialFolder }: { initialFolder?: Folder }) {
                     key={item.id}
                     item={item}
                     isSelected={item.id === selectedId}
-                    onSelect={() => setSelectedId(item.id)}
+                    onSelect={() => selectMail(item.id)}
                   />
                 )
               }
@@ -791,13 +877,19 @@ function MailContentInner({ initialFolder }: { initialFolder?: Folder }) {
                   key={item.id}
                   item={item}
                   isSelected={item.id === selectedId}
-                  onSelect={() => setSelectedId(item.id)}
+                  onSelect={() => selectMail(item.id)}
                 />
               )
             })
           ) : (
             <div className="flex flex-col items-center justify-center px-5 py-16 text-center">
-              <p className="text-body-sm text-gray-500">조건에 맞는 항목이 없습니다</p>
+              <Mail className="mb-3 h-8 w-8 text-gray-300" />
+              <p className="text-title font-semibold text-gray-900">
+                {hasSearchQuery ? '검색 결과가 없습니다' : '조건에 맞는 항목이 없습니다'}
+              </p>
+              <p className="mt-1 text-body-sm text-gray-500">
+                {hasSearchQuery ? `"${searchQuery}"에 맞는 메일을 찾지 못했습니다.` : '다른 필터를 선택해보세요.'}
+              </p>
             </div>
           )}
         </div>
@@ -808,17 +900,29 @@ function MailContentInner({ initialFolder }: { initialFolder?: Folder }) {
         hasSelected ? 'min-w-0 flex-1' : 'w-[420px] shrink-0'
       }`}>
         {selected ? (
-          <DetailContent mail={selected} onBack={() => setSelectedId(null)} />
+          <DetailContent mail={selected} onBack={() => selectMail(null)} />
         ) : (
-          <EmptyStateDetail mailItems={mailItems} onSelectMail={setSelectedId} />
+          <EmptyStateDetail mailItems={mailList} onSelectMail={selectMail} />
         )}
       </aside>
     </div>
   )
 }
 
-export default function MailContent({ initialFolder }: { initialFolder?: Folder }) {
-  return <MailContentInner key={initialFolder ?? 'all'} initialFolder={initialFolder} />
+export default function MailContent({
+  initialFolder,
+  searchQuery,
+}: {
+  initialFolder?: Folder
+  searchQuery?: string
+}) {
+  return (
+    <MailContentInner
+      key={initialFolder ?? 'all'}
+      initialFolder={initialFolder}
+      searchQuery={searchQuery}
+    />
+  )
 }
 
 function DetailContent({
