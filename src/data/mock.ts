@@ -1,15 +1,40 @@
 import type { Meeting, TeamMember } from '@/types/meeting'
+import { addDays, getCalendarBaseDate, toDateString } from '@/lib/date'
 
 export const teamMembers: TeamMember[] = [
-  { id: 'm1', name: '김철수', department: '설비 기술', role: '엔지니어' },
-  { id: 'm2', name: '이영희', department: '공정 기술', role: '기술원' },
+  { id: 'm1', name: '김철수', department: '설비 기술', role: '엔지니어', preferredAvoidTimeRanges: ['13:00-14:00'] },
+  { id: 'm2', name: '이영희', department: '공정 기술', role: '기술원', preferredAvoidDays: ['수'] },
   { id: 'm3', name: '박민준', department: '품질 관리', role: '엔지니어' },
-  { id: 'm4', name: '정서연', department: '생산 관리', role: '책임' },
-  { id: 'm5', name: '최동훈', department: '수율 분석', role: '분석원' },
-  { id: 'm6', name: '한지우', department: '협력사 관리', role: '담당' },
+  { id: 'm4', name: '정서연', department: '생산 관리', role: '책임', preferredAvoidTimeRanges: ['15:00-16:00'] },
+  { id: 'm5', name: '최동훈', department: '수율 분석', role: '분석원', preferredAvoidDays: ['월'] },
+  { id: 'm6', name: '한지우', department: '협력사 관리', role: '담당', preferredAvoidTimeRanges: ['09:00-10:00'] },
   { id: 'm7', name: '강수진', department: '설비 기술', role: '엔지니어' },
-  { id: 'm8', name: '윤태호', department: '공정 기술', role: '기술원' },
+  { id: 'm8', name: '윤태호', department: '공정 기술', role: '기술원', preferredAvoidDays: ['금'] },
 ]
+
+function addBusinessDays(date: Date, days: number) {
+  const next = new Date(date)
+  let remaining = days
+
+  while (remaining > 0) {
+    next.setDate(next.getDate() + 1)
+    const day = next.getDay()
+    if (day !== 0 && day !== 6) remaining -= 1
+  }
+
+  return next
+}
+
+const scheduleBaseDate = getCalendarBaseDate()
+
+export const mockScheduleDates = {
+  yieldImprovement: toDateString(addBusinessDays(scheduleBaseDate, 1)),
+  q2Retrospective: toDateString(addBusinessDays(scheduleBaseDate, 2)),
+  processChange: toDateString(addBusinessDays(scheduleBaseDate, 3)),
+}
+
+const replacementMeetingDate = mockScheduleDates.q2Retrospective
+const replacementFollowUpDate = toDateString(addDays(new Date(replacementMeetingDate + 'T00:00:00'), 1))
 
 export const meetings: Meeting[] = [
   {
@@ -18,7 +43,7 @@ export const meetings: Meeting[] = [
     description:
       '설비 수율 개선 방안을 검토하고 주요 액션 항목을 논의합니다.',
     location: '회의실 A',
-    createdAt: '2026-07-04T09:00:00',
+    createdAt: `${mockScheduleDates.yieldImprovement}T09:00:00`,
     organizerName: '김공정',
     myRole: 'organizer',
     requiredAttendanceRate: 60,
@@ -69,7 +94,7 @@ export const meetings: Meeting[] = [
     description:
       '신규 공정 변경 사항을 검토하고 적용 일정을 논의합니다.',
     location: '회의실 B',
-    createdAt: '2026-07-02T14:00:00',
+    createdAt: `${mockScheduleDates.processChange}T14:00:00`,
     organizerName: '박공정',
     myRole: 'participant',
     requiredAttendanceRate: 70,
@@ -82,7 +107,7 @@ export const meetings: Meeting[] = [
         department: '공정 기술',
         role: '기술원',
         responseStatus: 'approved',
-        respondedAt: '2026-07-03T10:00:00',
+        respondedAt: `${mockScheduleDates.processChange}T10:00:00`,
         isRequired: false,
       },
       {
@@ -91,7 +116,7 @@ export const meetings: Meeting[] = [
         department: '설비 기술',
         role: '엔지니어',
         responseStatus: 'approved',
-        respondedAt: '2026-07-03T11:00:00',
+        respondedAt: `${mockScheduleDates.processChange}T11:00:00`,
         isRequired: false,
       },
       {
@@ -100,7 +125,7 @@ export const meetings: Meeting[] = [
         department: '생산 관리',
         role: '책임',
         responseStatus: 'approved',
-        respondedAt: '2026-07-03T09:00:00',
+        respondedAt: `${mockScheduleDates.processChange}T09:00:00`,
         isRequired: false,
       },
       {
@@ -109,7 +134,7 @@ export const meetings: Meeting[] = [
         department: '협력사 관리',
         role: '담당',
         responseStatus: 'declined',
-        respondedAt: '2026-07-03T15:00:00',
+        respondedAt: `${mockScheduleDates.processChange}T15:00:00`,
         isRequired: false,
       },
       {
@@ -129,12 +154,16 @@ export const meetings: Meeting[] = [
     description:
       '2분기 목표 달성 현황을 점검하고 팀별 회고를 진행합니다.',
     location: '대회의실',
-    createdAt: '2026-06-28T10:00:00',
+    createdAt: `${mockScheduleDates.q2Retrospective}T10:00:00`,
     organizerName: '최리더',
     myRole: 'organizer',
     requiredAttendanceRate: 75,
     status: 'response_complete',
-    confirmedTimeSlot: null,
+    confirmedTimeSlot: {
+      date: replacementMeetingDate,
+      startTime: '14:00',
+      endTime: '15:00',
+    },
     participants: [
       {
         id: 'p10',
@@ -142,7 +171,7 @@ export const meetings: Meeting[] = [
         department: '공정 기술',
         role: '공정 리드',
         responseStatus: 'approved',
-        respondedAt: '2026-06-29T08:00:00',
+        respondedAt: `${mockScheduleDates.q2Retrospective}T08:00:00`,
         isRequired: true,
       },
       {
@@ -151,7 +180,7 @@ export const meetings: Meeting[] = [
         department: '공정 기술',
         role: '기술원',
         responseStatus: 'approved',
-        respondedAt: '2026-06-29T09:30:00',
+        respondedAt: `${mockScheduleDates.q2Retrospective}T09:30:00`,
         isRequired: false,
       },
       {
@@ -160,7 +189,7 @@ export const meetings: Meeting[] = [
         department: '공정 기술',
         role: '기술원',
         responseStatus: 'approved',
-        respondedAt: '2026-06-30T14:00:00',
+        respondedAt: `${mockScheduleDates.q2Retrospective}T13:00:00`,
         isRequired: false,
       },
       {
@@ -169,7 +198,7 @@ export const meetings: Meeting[] = [
         department: '설비 기술',
         role: '엔지니어',
         responseStatus: 'declined',
-        respondedAt: '2026-07-01T10:00:00',
+        respondedAt: `${mockScheduleDates.q2Retrospective}T10:00:00`,
         isRequired: true,
       },
     ],
@@ -181,6 +210,13 @@ export const meetings: Meeting[] = [
         role: '엔지니어',
         rationale: ['같은 팀', '같은 역할', '설비 운영 프로젝트 경험'],
         availability: 'available',
+        calendarEvents: [
+          {
+            date: replacementMeetingDate,
+            startTime: '13:30',
+            endTime: '15:00',
+          },
+        ],
       },
       {
         id: 'c2',
@@ -189,6 +225,13 @@ export const meetings: Meeting[] = [
         role: '엔지니어',
         rationale: ['같은 팀', '같은 역할'],
         availability: 'in_meeting',
+        calendarEvents: [
+          {
+            date: replacementMeetingDate,
+            startTime: '16:00',
+            endTime: '17:00',
+          },
+        ],
       },
       {
         id: 'c3',
@@ -197,6 +240,13 @@ export const meetings: Meeting[] = [
         role: '기술원',
         rationale: ['같은 공정 기술 파트', '유사 업무 경험'],
         availability: 'focused',
+        calendarEvents: [
+          {
+            date: replacementFollowUpDate,
+            startTime: '10:00',
+            endTime: '11:00',
+          },
+        ],
       },
     ],
   },

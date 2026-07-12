@@ -29,8 +29,8 @@ export default function ProgressStepper({ status, myRole, myResponseStatus }: Pr
     const responseLabel = myResponseStatus === 'approved' ? '참석'
       : myResponseStatus === 'declined' ? '불참'
       : '응답 대기'
-    const responseColor = myResponseStatus === 'approved' ? 'text-green-700 bg-green-50'
-      : myResponseStatus === 'declined' ? 'text-red-700 bg-red-50'
+    const responseColor = myResponseStatus === 'approved' ? 'text-success bg-success-bg'
+      : myResponseStatus === 'declined' ? 'text-danger bg-danger-bg'
       : 'text-gray-600 bg-gray-100'
 
     return (
@@ -47,34 +47,39 @@ export default function ProgressStepper({ status, myRole, myResponseStatus }: Pr
   }
 
   return (
-    <div className="flex items-center">
-      {steps.map((step, i) => {
-        const isCompleted = i < current
-        const isActive = i === current
-        return (
-          <div key={step.label} className="flex items-center flex-1">
-            <div className="flex flex-col items-center gap-1">
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold transition-all ${
-                isCompleted ? 'bg-gray-900 text-white'
-                  : isActive ? 'bg-gray-700 text-white ring-4 ring-gray-200'
-                  : 'bg-gray-100 text-gray-400'
-              }`}>
-                {isCompleted ? <Check className="h-4 w-4" /> : isActive ? <Dot className="h-6 w-6" /> : i + 1}
-              </div>
-              <span className={`text-2xs whitespace-nowrap ${
-                isActive ? 'font-semibold text-gray-900'
-                  : isCompleted ? 'text-gray-600'
-                  : 'text-gray-400'
-              }`}>
-                {step.label}
-              </span>
+    <div className="flex w-full justify-center">
+      <div className="relative w-full max-w-[360px]">
+        <div className="absolute left-[12.5%] right-[12.5%] top-4 grid grid-cols-3 gap-8" aria-hidden="true">
+          {steps.slice(0, -1).map((step, i) => (
+            <div key={step.label} className={`h-px ${i < current ? 'bg-gray-900' : 'bg-gray-200'}`} />
+          ))}
+        </div>
+
+        <div className="relative grid grid-cols-4 items-start">
+        {steps.map((step, i) => {
+          const isCompleted = i < current
+          const isActive = i === current
+          return (
+            <div key={step.label} className="flex min-w-0 flex-col items-center gap-1 text-center">
+                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-caption font-semibold transition-all ${
+                  isCompleted ? 'bg-gray-900 text-white'
+                    : isActive ? 'bg-gray-700 text-white ring-4 ring-gray-200'
+                    : 'bg-gray-100 text-gray-400'
+                }`}>
+                  {isCompleted ? <Check className="h-4 w-4" /> : isActive ? <Dot className="h-6 w-6" /> : i + 1}
+                </div>
+                <span className={`text-caption leading-tight ${
+                  isActive ? 'font-semibold text-gray-900'
+                    : isCompleted ? 'text-gray-600'
+                    : 'text-gray-400'
+                }`}>
+                  {step.label}
+                </span>
             </div>
-            {i < steps.length - 1 && (
-              <div className={`flex-1 h-px mx-2 ${i < current ? 'bg-gray-900' : 'bg-gray-200'}`} />
-            )}
-          </div>
-        )
-      })}
+          )
+        })}
+        </div>
+      </div>
     </div>
   )
 }

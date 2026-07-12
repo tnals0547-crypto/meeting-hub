@@ -12,7 +12,7 @@ interface MeetingPreviewProps {
 }
 
 function formatDate(dateString: string) {
-  const date = new Date(dateString)
+  const date = new Date(dateString + (dateString.includes('T') ? '' : 'T00:00:00'))
   return date.toLocaleDateString('ko-KR', {
     month: 'long',
     day: 'numeric',
@@ -22,7 +22,12 @@ function formatDate(dateString: string) {
 
 function formatTimeSlot(meeting: Meeting) {
   if (!meeting.confirmedTimeSlot) return '확정 시간 없음'
-  return `${meeting.confirmedTimeSlot.date} ${meeting.confirmedTimeSlot.startTime}~${meeting.confirmedTimeSlot.endTime}`
+  return `${formatDate(meeting.confirmedTimeSlot.date)} ${meeting.confirmedTimeSlot.startTime}~${meeting.confirmedTimeSlot.endTime}`
+}
+
+function formatMeetingDate(meeting: Meeting) {
+  if (meeting.confirmedTimeSlot) return formatTimeSlot(meeting)
+  return formatDate(meeting.createdAt)
 }
 
 export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
@@ -86,7 +91,7 @@ export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
                   <p className="text-caption text-gray-500">{records?.recording.duration ?? '-'} · {records?.recording.status === 'processing' ? '처리 중' : '확인 가능'}</p>
                 </div>
               </div>
-              <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-2xs font-medium text-gray-600">녹음 기록</span>
+              <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-caption font-medium text-gray-600">녹음 기록</span>
             </div>
             <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2.5">
               <div className="flex min-w-0 items-center gap-2">
@@ -96,7 +101,7 @@ export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
                   <p className="text-caption text-gray-500">{records?.video.duration ?? '-'} · {records?.video.status === 'processing' ? '처리 중' : '확인 가능'}</p>
                 </div>
               </div>
-              <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-2xs font-medium text-gray-600">영상</span>
+              <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-caption font-medium text-gray-600">영상</span>
             </div>
           </div>
         </section>
@@ -139,7 +144,7 @@ export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
           )}
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-gray-400" />
-            <dd>{formatDate(meeting.createdAt)}</dd>
+            <dd>{formatMeetingDate(meeting)}</dd>
           </div>
         </dl>
 
@@ -183,11 +188,11 @@ export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
         <div className="mt-4 border-t border-gray-100 pt-4">
           <p className="text-caption text-gray-500 mb-2">응답 현황</p>
           <div className="flex gap-2">
-            <span className="inline-flex items-center gap-1 rounded-md bg-green-50 px-2 py-1 text-caption font-medium text-green-700">
+            <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-2 py-1 text-caption font-medium text-success">
               <CheckCircle className="h-3.5 w-3.5" />{approved}
             </span>
             {declined > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-caption font-medium text-red-700">
+              <span className="inline-flex items-center gap-1 rounded-md bg-danger-bg px-2 py-1 text-caption font-medium text-danger">
                 <XCircle className="h-3.5 w-3.5" />{declined}
               </span>
             )}
@@ -229,11 +234,11 @@ export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
           {pending > 0 && <div className="h-full rounded-full bg-gray-200 transition-all" style={{ width: `${(pending / total) * 100}%` }} />}
         </div>
         <div className="mt-1.5 flex gap-3">
-          <span className="inline-flex items-center gap-1 text-caption text-green-600">
+          <span className="inline-flex items-center gap-1 text-caption text-success">
             <CheckCircle className="h-3.5 w-3.5" />{approved} 승인
           </span>
           {declined > 0 && (
-            <span className="inline-flex items-center gap-1 text-caption text-red-500">
+            <span className="inline-flex items-center gap-1 text-caption text-danger">
               <XCircle className="h-3.5 w-3.5" />{declined} 불참
             </span>
           )}

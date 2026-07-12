@@ -1,18 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import type { Meeting } from '@/types/meeting'
 import { meetings as mockMeetings } from '@/data/mock'
 import StatusBadge from '@/components/common/StatusBadge'
 
-export default function InboxPage() {
-  const [requests, setRequests] = useState<Meeting[]>([])
+function getPendingRequests() {
+  const all: Meeting[] = [...mockMeetings]
 
-  useEffect(() => {
-    const all: Meeting[] = [...mockMeetings]
-
+  if (typeof window !== 'undefined') {
     for (let i = 0; i < sessionStorage.length; i++) {
       const key = sessionStorage.key(i)
       if (key && key.startsWith('meeting-') && key !== 'newMeetingForm') {
@@ -25,13 +22,15 @@ export default function InboxPage() {
         }
       }
     }
+  }
 
-    const participantPending = all.filter(
-      (m) => m.myRole === 'participant' && m.participants.some((p) => p.responseStatus === 'pending'),
-    )
+  return all.filter(
+    (m) => m.myRole === 'participant' && m.participants.some((p) => p.responseStatus === 'pending'),
+  )
+}
 
-    setRequests(participantPending)
-  }, [])
+export default function InboxPage() {
+  const requests = getPendingRequests()
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-6">
@@ -64,7 +63,7 @@ export default function InboxPage() {
                     <span>{meeting.organizerName} · 주최</span>
                     <span>참석자 {meeting.participants.length}명</span>
                     {myParticipant && (
-                      <span className="inline-flex h-6 items-center rounded-full bg-amber-50 px-2 text-caption font-medium text-amber-700">
+                      <span className="inline-flex h-6 items-center rounded-full bg-warning-bg px-2 text-caption font-medium text-warning">
                         응답 대기 중
                       </span>
                     )}

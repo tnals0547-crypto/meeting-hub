@@ -1,4 +1,6 @@
-import type { MeetingDuration, TimeSlotWithAvailability } from '@/types/meeting'
+import { teamMembers } from '@/data/mock'
+import { getTodayString, toDateString } from '@/lib/date'
+import type { MeetingDuration, PreferenceConflict, TimeSlotWithAvailability } from '@/types/meeting'
 
 interface BusySlot {
   memberId: string
@@ -45,6 +47,59 @@ const DURATION_MINUTES: Record<MeetingDuration, number> = {
 
 const WORK_START = 9 * 60
 const WORK_END = 18 * 60
+const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
+
+const teamMemberById = new Map(teamMembers.map((member) => [member.id, member]))
+
+function timeToMinutes(time: string) {
+  const [hour, minute] = time.split(':').map(Number)
+  return hour * 60 + minute
+}
+
+function rangeOverlaps(slotStart: number, slotEnd: number, range: string) {
+  const [start, end] = range.split('-')
+  const rangeStart = timeToMinutes(start)
+  const rangeEnd = timeToMinutes(end)
+  return slotStart < rangeEnd && slotEnd > rangeStart
+}
+
+function getPreferenceConflicts(
+  memberIds: string[],
+  dayOfWeek: number,
+  slotStartMinute: number,
+  slotEndMinute: number,
+): PreferenceConflict[] {
+  const dayLabel = DAY_LABELS[dayOfWeek]
+  const conflicts: PreferenceConflict[] = []
+
+  for (const memberId of memberIds) {
+    const member = teamMemberById.get(memberId)
+    if (!member) continue
+
+    const avoidDay = member.preferredAvoidDays?.includes(dayLabel)
+    if (avoidDay) {
+      conflicts.push({
+        memberId,
+        memberName: member.name,
+        reason: `${dayLabel}요일 외근 가능성 있음`,
+      })
+      continue
+    }
+
+    const avoidRange = member.preferredAvoidTimeRanges?.find((range) =>
+      rangeOverlaps(slotStartMinute, slotEndMinute, range),
+    )
+    if (avoidRange) {
+      conflicts.push({
+        memberId,
+        memberName: member.name,
+        reason: `${avoidRange} 업무 집중 시간`,
+      })
+    }
+  }
+
+  return conflicts
+}
 
 export function generateTimeSlots(
   startDate: string,
@@ -52,22 +107,29 @@ export function generateTimeSlots(
   duration: MeetingDuration,
   requiredMemberIds: string[],
   optionalMemberIds: string[],
+  options: { includeWeekends?: boolean } = {},
 ): TimeSlotWithAvailability[] {
   const durMin = DURATION_MINUTES[duration]
   const allIds = [...requiredMemberIds, ...optionalMemberIds]
   const slots: TimeSlotWithAvailability[] = []
 
-  const start = new Date(startDate + 'T00:00:00')
+  const todayStr = getTodayString()
+  const today = new Date(todayStr + 'T00:00:00')
+  const requestedStart = new Date(startDate + 'T00:00:00')
   const end = new Date(endDate + 'T00:00:00')
+  const start = requestedStart < today ? today : requestedStart
+  const now = new Date()
+  const currentMinute = now.getHours() * 60 + now.getMinutes()
 
-  let current = new Date(start)
+  const current = new Date(start)
   while (current <= end) {
     const dayOfWeek = current.getDay()
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      const dateStr = current.toISOString().slice(0, 10)
+    if (options.includeWeekends || (dayOfWeek !== 0 && dayOfWeek !== 6)) {
+      const dateStr = toDateString(current)
 
       for (let minute = WORK_START; minute + durMin <= WORK_END; minute += durMin) {
         if (overlapsLunch(minute, minute + durMin)) continue
+        if (dateStr === todayStr && minute <= currentMinute) continue
 
         const startHour = Math.floor(minute / 60)
         const startMin = minute % 60
@@ -82,16 +144,24 @@ export function generateTimeSlots(
         const requiredAvailable = requiredMemberIds.filter((mid) =>
           availableMemberIds.includes(mid),
         ).length
+        const preferenceConflicts = getPreferenceConflicts(
+          availableMemberIds,
+          dayOfWeek,
+          minute,
+          minute + durMin,
+        )
 
         slots.push({
           date: dateStr,
           startTime: `${String(startHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`,
           endTime: `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`,
           availableMemberIds,
+          preferenceConflicts,
           totalMemberCount: allIds.length,
           requiredAvailableCount: requiredAvailable,
           requiredTotalCount: requiredMemberIds.length,
           allRequiredAvailable: requiredAvailable === requiredMemberIds.length,
+          hasPreferenceConflict: preferenceConflicts.length > 0,
         })
       }
     }
@@ -105,6 +175,12 @@ export function sortSlots(slots: TimeSlotWithAvailability[]): TimeSlotWithAvaila
   return [...slots].sort((a, b) => {
     if (a.allRequiredAvailable !== b.allRequiredAvailable) {
       return a.allRequiredAvailable ? -1 : 1
+    }
+    if (a.hasPreferenceConflict !== b.hasPreferenceConflict) {
+      return a.hasPreferenceConflict ? 1 : -1
+    }
+    if (a.preferenceConflicts.length !== b.preferenceConflicts.length) {
+      return a.preferenceConflicts.length - b.preferenceConflicts.length
     }
     if (a.availableMemberIds.length !== b.availableMemberIds.length) {
       return b.availableMemberIds.length - a.availableMemberIds.length

@@ -40,12 +40,17 @@ const actionConfig: Record<
 }
 
 function formatDate(dateString: string) {
-  const date = new Date(dateString)
+  const date = new Date(dateString + (dateString.includes('T') ? '' : 'T00:00:00'))
   return date.toLocaleDateString('ko-KR', {
     month: 'long',
     day: 'numeric',
     weekday: 'short',
   })
+}
+
+function getDisplayDate(meeting: Meeting) {
+  if (meeting.confirmedTimeSlot) return formatDate(meeting.confirmedTimeSlot.date)
+  return formatDate(meeting.createdAt)
 }
 
 export default function MeetingCard({ meeting, ctaOverride }: MeetingCardProps) {
@@ -56,11 +61,11 @@ export default function MeetingCard({ meeting, ctaOverride }: MeetingCardProps) 
   const roleConfig = ROLE_CONFIG[role]
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 transition-shadow hover:shadow-md hover:border-gray-200">
+    <div className="rounded-card border border-gray-200 bg-white p-5 transition-shadow hover:border-gray-300 hover:shadow-sm">
       <h3 className="text-title font-semibold text-gray-900">{meeting.title}</h3>
 
       <p className="mt-1 text-body-sm text-gray-600">
-        {formatDate(meeting.createdAt)} · {meeting.location}
+        {getDisplayDate(meeting)} · {meeting.location}
       </p>
 
       <div className="mt-2 flex items-center gap-2">

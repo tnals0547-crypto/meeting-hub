@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Users, Calendar, ArrowRight } from 'lucide-react'
 import type { Meeting } from '@/types/meeting'
@@ -13,6 +13,11 @@ import ParticipantList from '@/components/ParticipantList'
 import ProgressStepper from '@/components/ProgressStepper'
 import ConfirmConditions from '@/components/ConfirmConditions'
 import PageLayout from '@/components/layout/PageLayout'
+
+interface MeetingLoadState {
+  meeting: Meeting | null
+  error: string | null
+}
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -30,34 +35,30 @@ function formatCreatedAt(dateStr: string) {
 }
 
 export default function DynamicMeetingPage({ id }: { id: string }) {
-  const [meeting, setMeeting] = useState<Meeting | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const readMeeting = (): MeetingLoadState => {
+    if (typeof window === 'undefined') return { meeting: null, error: null }
 
-  function loadMeeting() {
-    setLoading(true)
-    setError(null)
     try {
       const stored = sessionStorage.getItem(`meeting-${id}`)
       if (stored) {
         const data = JSON.parse(stored)
         if (!data.myRole) data.myRole = 'organizer'
-        setMeeting(data)
-      } else {
-        setMeeting(null)
+        return { meeting: data, error: null }
       }
+      return { meeting: null, error: null }
     } catch {
-      setError('회의 정보를 불러오는 중 오류가 발생했습니다.')
-    } finally {
-      setLoading(false)
+      return { meeting: null, error: '회의 정보를 불러오는 중 오류가 발생했습니다.' }
     }
   }
 
-  useEffect(() => {
-    loadMeeting()
-  }, [id])
+  const [loadState, setLoadState] = useState<MeetingLoadState>(() => readMeeting())
+  const { meeting, error } = loadState
 
-  if (loading) {
+  function loadMeeting() {
+    setLoadState(readMeeting())
+  }
+
+  if (typeof window === 'undefined') {
     return (
       <div className="flex min-h-full flex-col items-center bg-gray-50">
         <main className="flex w-full max-w-xl flex-col gap-4 px-6 py-10">
@@ -117,13 +118,13 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
   const rightPanel = (
     <div className="hidden lg:flex lg:flex-col lg:gap-5">
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900">참석자 목록</h3>
+        <h3 className="text-title font-semibold text-gray-900">참석자 목록</h3>
         <div className="mt-3">
           <ParticipantList participants={meeting.participants} />
         </div>
       </div>
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900">회의 정보</h3>
+        <h3 className="text-title font-semibold text-gray-900">회의 정보</h3>
         <dl className="mt-2 space-y-2 text-body-sm text-gray-600">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-gray-400" />
@@ -201,7 +202,7 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
           </div>
           <div className="mt-6">
             <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">진행 단계</h3>
+              <h3 className="text-title font-semibold text-gray-900 mb-4">진행 단계</h3>
               <ProgressStepper status={status} />
             </div>
           </div>
@@ -210,7 +211,7 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
               <Button
                 href={`/meetings/${meeting.id}/replacement`}
                 variant="primary"
-                className="w-full justify-between text-base"
+                className="w-full justify-between"
               >
                 <span>대체 참석자 선택하기</span>
                 <ArrowRight className="h-5 w-5" />

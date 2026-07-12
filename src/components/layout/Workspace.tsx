@@ -1,15 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { PanelLeft, X, ArrowRight } from 'lucide-react'
 import { meetings as mockMeetings } from '@/data/mock'
 import type { Meeting } from '@/types/meeting'
 
 const scheduleItems = [
-  { time: '09:00', title: '데일리 스크럼', bar: 'bg-amber-500' },
-  { time: '11:00', title: '프로젝트 리뷰', bar: 'bg-blue-500' },
-  { time: '14:30', title: '파트너 미팅', bar: 'bg-green-500' },
+  { time: '09:00', title: '데일리 스크럼', bar: 'bg-warning' },
+  { time: '11:00', title: '프로젝트 리뷰', bar: 'bg-info' },
+  { time: '14:30', title: '파트너 미팅', bar: 'bg-success' },
 ]
 
 const recentMails = [
@@ -31,6 +31,26 @@ const statusLabel: Record<string, string> = {
   confirmed: '확정 완료',
 }
 
+function readAllMeetings() {
+  const stored: Meeting[] = [...mockMeetings]
+  if (typeof window === 'undefined') return stored
+
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i)
+    if (key && key.startsWith('meeting-') && key !== 'newMeetingForm') {
+      try {
+        const data = JSON.parse(sessionStorage.getItem(key)!)
+        if (!data.myRole) data.myRole = 'organizer'
+        stored.push(data)
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  return stored
+}
+
 export default function Workspace({
   isOpen,
   onClose,
@@ -38,24 +58,7 @@ export default function Workspace({
   isOpen: boolean
   onClose: () => void
 }) {
-  const [allMeetings, setAllMeetings] = useState<Meeting[]>([])
-
-  useEffect(() => {
-    const stored: Meeting[] = [...mockMeetings]
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const key = sessionStorage.key(i)
-      if (key && key.startsWith('meeting-') && key !== 'newMeetingForm') {
-        try {
-          const data = JSON.parse(sessionStorage.getItem(key)!)
-          if (!data.myRole) data.myRole = 'organizer'
-          stored.push(data)
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-    setAllMeetings(stored)
-  }, [])
+  const [allMeetings] = useState<Meeting[]>(() => readAllMeetings())
 
   const actionRequired = allMeetings.filter(
     (m) =>
@@ -88,7 +91,7 @@ export default function Workspace({
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3.5">
           <div className="flex items-center gap-2">
             <PanelLeft className="h-4 w-4 text-gray-400" />
-            <span className="text-sm font-bold text-gray-900">Relay Workspace</span>
+            <span className="text-title font-bold text-gray-900">Relay Workspace</span>
           </div>
           <button
             onClick={onClose}
@@ -129,7 +132,7 @@ export default function Workspace({
                   오늘 확인할 내용
                 </h3>
                 {actionRequired.length > 0 && (
-                  <span className="inline-flex items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-caption font-medium text-red-600">
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-caption font-medium text-danger">
                     {actionRequired.length}
                   </span>
                 )}
@@ -202,7 +205,7 @@ export default function Workspace({
                 )}
                 <Link
                   href="/meetings"
-                  className="flex items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-50"
+                  className="flex items-center gap-1 rounded-lg px-2.5 py-2 text-body-sm font-medium text-gray-500 transition-colors hover:bg-gray-50"
                 >
                   <span>모든 회의 보기</span>
                   <ArrowRight className="h-3.5 w-3.5" />

@@ -81,7 +81,7 @@ export default function ConfirmConditions({ meeting }: ConfirmConditionsProps) {
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-5">
       <div className="flex items-end justify-between">
-        <h3 className="text-sm font-semibold text-gray-900">회의 확정 조건</h3>
+        <h3 className="text-title font-semibold text-gray-900">회의 확정 조건</h3>
         <span className="text-heading-s font-bold text-gray-900">{doneCount}/{total}</span>
       </div>
 

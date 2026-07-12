@@ -10,6 +10,12 @@ export interface TimeSlot {
   endTime: string
 }
 
+export interface PreferenceConflict {
+  memberId: string
+  memberName: string
+  reason: string
+}
+
 export interface Participant {
   id: string
   name: string
@@ -29,10 +35,13 @@ export interface TimeSlotWithAvailability {
   startTime: string
   endTime: string
   availableMemberIds: string[]
+  preferenceConflicts: PreferenceConflict[]
   totalMemberCount: number
   requiredAvailableCount: number
   requiredTotalCount: number
   allRequiredAvailable: boolean
+  hasPreferenceConflict: boolean
+  requestMode?: 'recommended' | 'manual'
 }
 
 export interface TeamMember {
@@ -40,6 +49,8 @@ export interface TeamMember {
   name: string
   department: string
   role: string
+  preferredAvoidTimeRanges?: string[]
+  preferredAvoidDays?: string[]
 }
 
 export interface ReplacementCandidate {
@@ -49,6 +60,7 @@ export interface ReplacementCandidate {
   role: string
   rationale: string[]
   availability: AvailabilityStatus
+  calendarEvents?: TimeSlot[]
 }
 
 export interface MeetingRecord {
@@ -69,6 +81,7 @@ export interface Meeting {
   id: string
   title: string
   description: string
+  noticeMessage?: string
   location: string
   createdAt: string
   organizerName: string

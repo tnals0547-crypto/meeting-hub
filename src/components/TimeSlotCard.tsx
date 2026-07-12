@@ -26,18 +26,28 @@ export default function TimeSlotCard({
 }: TimeSlotCardProps) {
   const {
     availableMemberIds,
+    preferenceConflicts,
     totalMemberCount,
     requiredAvailableCount,
     requiredTotalCount,
     allRequiredAvailable,
+    hasPreferenceConflict,
   } = slot
+  const conflictPreview = preferenceConflicts.slice(0, 2)
+  const extraConflictCount = Math.max(0, preferenceConflicts.length - conflictPreview.length)
+  const isManualRequest = slot.requestMode === 'manual'
 
   if (mode === 'hero') {
     return (
       <div className="rounded-2xl border border-gray-100 bg-white p-5">
         <p className="text-title font-semibold text-gray-900">
-          바로 요청 가능한 시간
+          {isManualRequest ? '직접 요청 시간' : '바로 요청 가능한 시간'}
         </p>
+        {isManualRequest && (
+          <p className="mt-1 text-body-sm text-gray-600">
+            추천 후보가 아니어도 참석자에게 확인 요청을 보낼 수 있어요.
+          </p>
+        )}
 
         <p className="mt-4 text-heading-s font-bold text-gray-900">
           {formatDateLabel(slot.date)}
@@ -52,11 +62,31 @@ export default function TimeSlotCard({
           </p>
           <p className="text-body-sm text-gray-600">
             필수 참석자{' '}
-            {allRequiredAvailable
-              ? '모두 가능'
+            {isManualRequest
+              ? '응답 확인 필요'
+              : allRequiredAvailable
+              ? hasPreferenceConflict ? '모두 가능 · 일정 조율 권장' : '모두 가능'
               : `${requiredAvailableCount}/${requiredTotalCount}명 가능`}
           </p>
         </div>
+
+        {preferenceConflicts.length > 0 && (
+          <div className="mt-3 rounded-[8px] border border-warning/20 bg-warning-bg px-3 py-2">
+            <p className="text-caption font-medium text-warning">일정 조율 권장</p>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {conflictPreview.map((conflict) => (
+                <span key={`${conflict.memberId}-${conflict.reason}`} className="rounded-full bg-white px-2 py-0.5 text-caption text-warning">
+                  {conflict.memberName}님 {conflict.reason}
+                </span>
+              ))}
+              {extraConflictCount > 0 && (
+                <span className="rounded-full bg-white px-2 py-0.5 text-caption text-warning">
+                  외 {extraConflictCount}명
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {availableMemberIds.length > 0 && (
           <div className="mt-4">
@@ -76,7 +106,7 @@ export default function TimeSlotCard({
 
         <div className="mt-6">
           <Button onClick={onSubmit} className="w-full">
-            이 시간으로 요청하기
+            {isManualRequest ? '직접 입력한 시간으로 요청하기' : '이 시간으로 요청하기'}
           </Button>
         </div>
       </div>
@@ -101,10 +131,17 @@ export default function TimeSlotCard({
           {availableMemberIds.length}/{totalMemberCount}명 가능
         </p>
         <p className="text-xs text-gray-500">
-          {allRequiredAvailable
-            ? '필수 모두 가능'
+          {isManualRequest
+            ? '응답 확인 필요'
+            : allRequiredAvailable
+            ? hasPreferenceConflict ? '확인 권장' : '필수 모두 가능'
             : `필수 ${requiredAvailableCount}/${requiredTotalCount}`}
         </p>
+        {preferenceConflicts[0] && (
+          <p className="mt-1 max-w-[180px] truncate text-caption text-warning">
+            {preferenceConflicts[0].memberName}님 일정 조율 권장
+          </p>
+        )}
       </div>
     </button>
   )

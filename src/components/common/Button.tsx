@@ -15,13 +15,13 @@ interface ButtonProps {
 
 const variantStyles: Record<string, string> = {
   primary:
-    'h-11 rounded-[8px] bg-brand-500 px-5 text-base font-medium text-white transition-all hover:bg-brand-600 active:bg-brand-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400',
+    'h-10 rounded-control bg-info px-4 text-title font-medium text-white hover:opacity-90 active:opacity-95 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400',
   secondary:
-    'h-9 rounded-[8px] border border-gray-200 bg-white px-4 text-body-sm font-medium text-gray-700 transition-all hover:bg-gray-50 active:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50',
+    'h-9 rounded-control border border-gray-200 bg-white px-3 text-body-sm font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50',
   danger:
-    'h-11 rounded-[8px] bg-red-500 px-5 text-base font-medium text-white transition-all hover:bg-red-600 active:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400',
+    'h-10 rounded-control bg-danger px-4 text-title font-medium text-white hover:opacity-90 active:opacity-95 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400',
   ghost:
-    'h-9 rounded-[8px] px-4 text-body-sm font-medium text-gray-600 transition-all hover:bg-gray-100 active:bg-gray-200',
+    'h-9 rounded-control px-3 text-body-sm font-medium text-gray-600 hover:bg-gray-100 active:bg-gray-200',
 }
 
 export default function Button({
@@ -37,11 +37,11 @@ export default function Button({
 }: ButtonProps) {
   const classNames = [
     'inline-flex items-center justify-center',
-    'transition-all duration-150',
+    'gap-1.5 transition-all duration-150',
     variantStyles[variant],
     'select-none',
     loading && 'relative text-transparent',
-    success && 'bg-green-500 hover:bg-green-600 active:bg-green-700 border-green-500 text-white',
+    success && 'bg-success hover:opacity-90 active:opacity-95 border-success text-white',
     className,
   ]
     .filter(Boolean)

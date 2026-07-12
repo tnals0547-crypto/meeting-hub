@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { Mail, CalendarDays, ClipboardList, MessageSquare } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -23,10 +23,6 @@ export default function SideNav() {
   return (
     <nav className="hidden w-[72px] shrink-0 border-r border-gray-200 bg-white lg:flex lg:flex-col lg:items-center">
       <div className="flex w-full flex-col items-center gap-3 py-4">
-        <Link href="/" className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-900 text-sm font-bold tracking-tight text-white">
-            R
-        </Link>
-
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.label}
@@ -40,7 +36,7 @@ export default function SideNav() {
             }`}
           >
             {isActive(item.href) && (
-              <span className="absolute left-[-17px] top-2 h-6 w-0.5 rounded-full bg-brand-500" />
+              <span className="absolute left-[-17px] top-2 h-6 w-0.5 rounded-full bg-info" />
             )}
             <item.icon className="h-5 w-5 shrink-0" />
           </Link>

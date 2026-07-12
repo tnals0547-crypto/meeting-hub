@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Mail, CalendarDays, Users, Clock, CheckCircle, XCircle, HelpCircle, AlertCircle, FileText } from 'lucide-react'
 import { meetings } from '@/data/mock'
@@ -180,10 +180,10 @@ const mailItems: MailItem[] = [
 ]
 
 const typeStyles: Record<MailType, string> = {
-  replacement_needed: 'bg-purple-50 text-purple-700 border border-purple-200',
-  response_update: 'bg-amber-50 text-amber-700 border border-amber-200',
-  meeting_request: 'bg-blue-50 text-blue-700 border border-blue-200',
-  meeting_confirmed: 'bg-green-50 text-green-700 border border-green-200',
+  replacement_needed: 'bg-status-replacement-bg text-status-replacement border border-status-replacement/15',
+  response_update: 'bg-warning-bg text-warning border border-warning/15',
+  meeting_request: 'bg-info-bg text-info border border-info/15',
+  meeting_confirmed: 'bg-success-bg text-success border border-success/15',
   regular: 'bg-gray-50 text-gray-400 border border-gray-200',
 }
 
@@ -213,11 +213,11 @@ function formatRelativeDate(dateString: string) {
 function responseStatusPill(status: ResponseStatus) {
   switch (status) {
     case 'approved':
-      return <CheckCircle className="h-4 w-4 text-green-500" />
+      return <CheckCircle className="h-4 w-4 text-success" />
     case 'declined':
-      return <XCircle className="h-4 w-4 text-red-500" />
+      return <XCircle className="h-4 w-4 text-danger" />
     case 'pending':
-      return <HelpCircle className="h-4 w-4 text-amber-400" />
+      return <HelpCircle className="h-4 w-4 text-warning" />
   }
 }
 
@@ -243,11 +243,11 @@ function MeetingMailRow({
         isSelected ? 'bg-gray-50' : 'bg-white hover:bg-gray-50'
       }`}
     >
-      {isSelected && <div className="w-0.5 shrink-0 bg-brand-500" />}
+      {isSelected && <div className="w-0.5 shrink-0 bg-info" />}
       <div className="flex flex-1 items-start gap-3 px-5 py-3.5 min-w-0">
         <div className="flex shrink-0 flex-col items-center pt-1.5" style={{ width: 12 }}>
           {!item.isRead ? (
-            <span className="h-2 w-2 rounded-full bg-blue-500" />
+            <span className="h-2 w-2 rounded-full bg-info" />
           ) : (
             <span className="h-2 w-2 rounded-full border border-gray-300" />
           )}
@@ -257,7 +257,7 @@ function MeetingMailRow({
             <span className={`truncate ${!item.isRead ? 'text-title font-semibold text-gray-900' : 'text-title font-medium text-gray-900'}`}>
               {item.from}
             </span>
-            <span className={`inline-flex shrink-0 items-center h-5 rounded-full px-1.5 text-2xs font-medium ${typeStyles[item.type]}`}>
+            <span className={`inline-flex h-6 shrink-0 items-center rounded-full px-2 text-caption font-medium ${typeStyles[item.type]}`}>
               {mailTypeLabel[item.type]}
             </span>
             <span className="ml-auto shrink-0 text-caption text-gray-400 tabular-nums">
@@ -270,7 +270,7 @@ function MeetingMailRow({
           <p className="truncate mt-0.5 text-body-sm text-gray-500">{item.preview}</p>
           <div className="mt-2 flex items-center gap-1.5">
             {!item.isRead && (
-              <span className="inline-flex items-center h-5 rounded-full px-1.5 text-2xs font-medium bg-red-50 text-red-600 border border-red-200">
+              <span className="inline-flex h-6 items-center rounded-full border border-warning/15 bg-warning-bg px-2 text-caption font-medium text-warning">
                 확인 필요
               </span>
             )}
@@ -329,12 +329,15 @@ function MeetingDetailContent({ mail, meeting }: { mail: MailItem; meeting: Meet
     return { approved, declined, pending, total: meeting.participants.length }
   }, [meeting])
 
-  const roleLabel = meeting.myRole === 'organizer' ? '주최자' : '참석자'
+  const roleLabel = mail.type === 'response_update'
+    ? '응답 확인'
+    : mail.type === 'meeting_request' ? '참석자'
+    : meeting.myRole === 'organizer' ? '주최자' : '참석자'
 
   const ctaConfig: Record<MailType, { text: string; href: string; description: string } | null> = {
     meeting_request: {
       text: '참석 요청 응답',
-      href: '#',
+      href: `/meetings/${mail.meetingId}?view=respond`,
       description: '참석 여부를 선택해주세요.',
     },
     replacement_needed: {
@@ -344,7 +347,7 @@ function MeetingDetailContent({ mail, meeting }: { mail: MailItem; meeting: Meet
     },
     response_update: {
       text: '응답 현황 보기',
-      href: `/meetings/${mail.meetingId}`,
+      href: `/meetings/${mail.meetingId}?view=response-status`,
       description: `${participantSummary.pending}명이 아직 응답하지 않았습니다.`,
     },
     meeting_confirmed: {
@@ -402,7 +405,7 @@ function MeetingDetailContent({ mail, meeting }: { mail: MailItem; meeting: Meet
                       <div className="flex items-center gap-2">
                         <span className="truncate text-body-sm font-medium text-gray-900">{p.name}</span>
                         {p.isRequired && (
-                          <span className="inline-flex items-center gap-0.5 rounded bg-red-50 px-1 py-0.5 text-2xs font-medium text-red-600">
+                          <span className="inline-flex items-center gap-0.5 rounded bg-danger-bg px-1 py-0.5 text-caption font-medium text-danger">
                             <AlertCircle className="h-3 w-3" />필수
                           </span>
                         )}
@@ -447,13 +450,13 @@ function MeetingDetailContent({ mail, meeting }: { mail: MailItem; meeting: Meet
           <section className="rounded-xl border border-gray-200 bg-white p-5">
             <h4 className="text-title font-semibold text-gray-900">참석자 응답</h4>
             <div className="mt-3 grid grid-cols-3 gap-2">
-              <span className="inline-flex items-center justify-center gap-1 rounded-md bg-green-50 px-2 py-2 text-caption font-medium text-green-700">
+              <span className="inline-flex items-center justify-center gap-1 rounded-md bg-success-bg px-2 py-2 text-caption font-medium text-success">
                 <CheckCircle className="h-3.5 w-3.5" />{participantSummary.approved}
               </span>
-              <span className="inline-flex items-center justify-center gap-1 rounded-md bg-red-50 px-2 py-2 text-caption font-medium text-red-700">
+              <span className="inline-flex items-center justify-center gap-1 rounded-md bg-danger-bg px-2 py-2 text-caption font-medium text-danger">
                 <XCircle className="h-3.5 w-3.5" />{participantSummary.declined}
               </span>
-              <span className="inline-flex items-center justify-center gap-1 rounded-md bg-amber-50 px-2 py-2 text-caption font-medium text-amber-700">
+              <span className="inline-flex items-center justify-center gap-1 rounded-md bg-warning-bg px-2 py-2 text-caption font-medium text-warning">
                 <HelpCircle className="h-3.5 w-3.5" />{participantSummary.pending}
               </span>
             </div>
@@ -461,9 +464,7 @@ function MeetingDetailContent({ mail, meeting }: { mail: MailItem; meeting: Meet
 
           <section className="rounded-xl border border-gray-200 bg-white p-5">
             <h4 className="text-title font-semibold text-gray-900">내 역할</h4>
-            <span className={`mt-3 inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium ${
-              meeting.myRole === 'organizer' ? 'bg-gray-100 text-gray-700' : 'bg-gray-100 text-gray-600'
-            }`}>
+            <span className="mt-3 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-caption font-medium text-gray-700">
               {roleLabel}
             </span>
           </section>
@@ -474,7 +475,7 @@ function MeetingDetailContent({ mail, meeting }: { mail: MailItem; meeting: Meet
               <p className="mt-2 text-body-sm leading-relaxed text-gray-600">{cta.description}</p>
               <Link
                 href={cta.href}
-                className="mt-4 inline-flex w-full items-center justify-between rounded-[8px] bg-brand-500 px-4 py-2.5 text-body-sm font-medium text-white transition-colors hover:bg-brand-600"
+                className="mt-4 inline-flex w-full items-center justify-between rounded-[8px] bg-info px-4 py-2.5 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
               >
                 <span>{cta.text}</span>
                 <ArrowRight className="h-4 w-4" />
@@ -546,7 +547,7 @@ function EmptyStateDetail({ mailItems }: { mailItems: MailItem[] }) {
         {tasks.responseNeeded > 0 && (
           <div className="flex items-center gap-3 rounded-lg border border-l-4 border-gray-200 border-l-info bg-white px-4 py-3">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-              <HelpCircle className="h-4 w-4 text-blue-600" />
+              <HelpCircle className="h-4 w-4 text-info" />
             </span>
             <div>
               <p className="text-body-sm font-medium text-gray-900">내 응답 필요</p>
@@ -557,7 +558,7 @@ function EmptyStateDetail({ mailItems }: { mailItems: MailItem[] }) {
         {tasks.replacementNeeded > 0 && (
           <div className="flex items-center gap-3 rounded-lg border border-l-4 border-gray-200 border-l-status-replacement bg-white px-4 py-3">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-              <Users className="h-4 w-4 text-purple-600" />
+              <Users className="h-4 w-4 text-status-replacement" />
             </span>
             <div>
               <p className="text-body-sm font-medium text-gray-900">대체 참석 요청</p>
@@ -568,7 +569,7 @@ function EmptyStateDetail({ mailItems }: { mailItems: MailItem[] }) {
         {tasks.organizerCheckNeeded > 0 && (
           <div className="flex items-center gap-3 rounded-lg border border-l-4 border-gray-200 border-l-warning bg-white px-4 py-3">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertCircle className="h-4 w-4 text-warning" />
             </span>
             <div>
               <p className="text-body-sm font-medium text-gray-900">주최자 확인 필요</p>
@@ -581,13 +582,9 @@ function EmptyStateDetail({ mailItems }: { mailItems: MailItem[] }) {
   )
 }
 
-export default function MailContent({ initialFolder }: { initialFolder?: Folder }) {
+function MailContentInner({ initialFolder }: { initialFolder?: Folder }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [activeFolder, setActiveFolder] = useState<Folder>(initialFolder ?? 'all')
-
-  useEffect(() => {
-    if (initialFolder) setActiveFolder(initialFolder)
-  }, [initialFolder])
 
   const meetingMails = useMemo(() => mailItems.filter((m) => m.type !== 'regular').sort((a, b) => a.priority - b.priority), [])
   const regularMails = useMemo(() => mailItems.filter((m) => m.type === 'regular'), [])
@@ -649,12 +646,12 @@ export default function MailContent({ initialFolder }: { initialFolder?: Folder 
               onClick={() => setSelectedId(item.id === selectedId ? null : item.id)}
               className={`w-full rounded-xl border p-4 text-left transition-colors ${
                 selectedId === item.id ? 'border-gray-300 bg-gray-50' : 'border-gray-200 bg-white'
-              } ${isMeeting && !item.isRead ? 'border-l-4 border-l-blue-500' : ''}`}
+              } ${isMeeting && !item.isRead ? 'border-l-4 border-l-info' : ''}`}
             >
               <div className="flex items-center gap-2">
-                {!item.isRead && isMeeting && <span className="inline-block h-2 w-2 rounded-full bg-blue-500 shrink-0" />}
+                {!item.isRead && isMeeting && <span className="inline-block h-2 w-2 rounded-full bg-info shrink-0" />}
                 {isMeeting ? (
-                  <span className={`inline-flex h-5 items-center rounded-full px-1.5 text-2xs font-medium ${typeStyles[item.type]}`}>
+                  <span className={`inline-flex h-6 items-center rounded-full px-2 text-caption font-medium ${typeStyles[item.type]}`}>
                     {mailTypeLabel[item.type]}
                   </span>
                 ) : (
@@ -676,16 +673,16 @@ export default function MailContent({ initialFolder }: { initialFolder?: Folder 
                 const pending = meeting.participants.filter((p) => p.responseStatus === 'pending').length
                 return (
                   <div className="mt-2 flex gap-1.5">
-                    <span className="inline-flex items-center gap-0.5 rounded bg-green-50 px-1.5 py-0.5 text-2xs text-green-700">
+                    <span className="inline-flex items-center gap-0.5 rounded bg-success-bg px-1.5 py-0.5 text-caption text-success">
                       <CheckCircle className="h-3 w-3" />{approved}
                     </span>
                     {declined > 0 && (
-                      <span className="inline-flex items-center gap-0.5 rounded bg-red-50 px-1.5 py-0.5 text-2xs text-red-700">
+                      <span className="inline-flex items-center gap-0.5 rounded bg-danger-bg px-1.5 py-0.5 text-caption text-danger">
                         <XCircle className="h-3 w-3" />{declined}
                       </span>
                     )}
                     {pending > 0 && (
-                      <span className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1.5 py-0.5 text-2xs text-amber-700">
+                      <span className="inline-flex items-center gap-0.5 rounded bg-warning-bg px-1.5 py-0.5 text-caption text-warning">
                         <HelpCircle className="h-3 w-3" />{pending}
                       </span>
                     )}
@@ -754,6 +751,10 @@ export default function MailContent({ initialFolder }: { initialFolder?: Folder 
       </aside>
     </div>
   )
+}
+
+export default function MailContent({ initialFolder }: { initialFolder?: Folder }) {
+  return <MailContentInner key={initialFolder ?? 'all'} initialFolder={initialFolder} />
 }
 
 function DetailContent({ mail }: { mail: MailItem }) {

@@ -13,8 +13,7 @@ const MAIL_ITEMS = [
 ]
 
 const CALENDAR_ITEMS = [
-  { label: '오늘', href: '/calendar' },
-  { label: '이번 주', href: '/calendar?view=week' },
+  { label: '이번 주', href: '/calendar' },
   { label: '회의', href: '/calendar?filter=meeting' },
   { label: '집중 업무', href: '/calendar?filter=focus' },
   { label: '외부 일정', href: '/calendar?filter=external' },
@@ -138,7 +137,7 @@ function LNBContent() {
               scroll={false}
               className={`rounded-lg border px-3 py-2 text-body-sm transition-colors ${
                 active
-                  ? 'border-gray-900 bg-gray-50 font-semibold text-gray-900'
+                  ? 'border-gray-400 bg-gray-50 font-semibold text-gray-900'
                   : 'border-transparent font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >

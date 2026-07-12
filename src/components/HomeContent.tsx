@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { CheckCircle, HelpCircle, XCircle, AlertCircle, Calendar, Archive } from 'lucide-react'
 import type { Meeting } from '@/types/meeting'
@@ -14,26 +14,46 @@ interface HomeContentProps {
   initialFilter?: string
 }
 
+function readStoredMeetings() {
+  const stored: Meeting[] = []
+  if (typeof window === 'undefined') return stored
+
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i)
+    if (key && key.startsWith('meeting-') && key !== 'newMeetingForm') {
+      try {
+        const data = JSON.parse(sessionStorage.getItem(key)!)
+        if (!data.myRole) data.myRole = 'organizer'
+        stored.push(data)
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  return stored
+}
+
 const stepLabel: Record<string, { icon: React.ReactNode; text: string; className: string }> = {
   pending: {
     icon: <HelpCircle className="h-3.5 w-3.5" />,
     text: '참석 요청 전',
-    className: 'bg-blue-50 text-blue-700',
+    className: 'border border-info/15 bg-info-bg text-info',
   },
   response_collecting: {
     icon: <AlertCircle className="h-3.5 w-3.5" />,
     text: '미응답 있음',
-    className: 'bg-amber-50 text-amber-700',
+    className: 'border border-warning/15 bg-warning-bg text-warning',
   },
   response_complete: {
     icon: <XCircle className="h-3.5 w-3.5" />,
     text: '불참 있음',
-    className: 'bg-purple-50 text-purple-700',
+    className: 'border border-status-replacement/15 bg-status-replacement-bg text-status-replacement',
   },
   confirmed: {
     icon: <CheckCircle className="h-3.5 w-3.5" />,
     text: '확정 가능',
-    className: 'bg-green-50 text-green-700',
+    className: 'border border-success/15 bg-success-bg text-success',
   },
   completed: {
     icon: <Archive className="h-3.5 w-3.5" />,
@@ -43,25 +63,8 @@ const stepLabel: Record<string, { icon: React.ReactNode; text: string; className
 }
 
 export default function HomeContent({ meetings, initialFilter }: HomeContentProps) {
-  const [dynamicMeetings, setDynamicMeetings] = useState<Meeting[]>([])
+  const [dynamicMeetings] = useState<Meeting[]>(() => readStoredMeetings())
   const [selectedId, setSelectedId] = useState<string | null>(null)
-
-  useEffect(() => {
-    const stored: Meeting[] = []
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const key = sessionStorage.key(i)
-      if (key && key.startsWith('meeting-') && key !== 'newMeetingForm') {
-        try {
-          const data = JSON.parse(sessionStorage.getItem(key)!)
-          if (!data.myRole) data.myRole = 'organizer'
-          stored.push(data)
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-    setDynamicMeetings(stored)
-  }, [])
 
   const allMeetingSource = [...dynamicMeetings, ...meetings]
     .sort((a, b) => {
@@ -131,7 +134,7 @@ export default function HomeContent({ meetings, initialFilter }: HomeContentProp
                   >
                     <div className="flex items-start justify-between gap-3">
                       <h3 className="text-title font-semibold text-gray-900 truncate">{m.title}</h3>
-                      <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium ${step.className}`}>
+                      <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-caption font-medium ${step.className}`}>
                         {step.icon}
                         {step.text}
                       </span>

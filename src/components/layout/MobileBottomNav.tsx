@@ -31,9 +31,9 @@ export default function MobileBottomNav() {
         <Link
           key={tab.label}
           href={tab.href}
-           className={`flex flex-col items-center gap-0.5 px-3 py-1 text-xs font-medium transition-colors ${
+           className={`flex flex-col items-center gap-0.5 px-3 py-1 text-sm font-medium transition-colors ${
             isActive(tab.href)
-              ? 'text-brand-500'
+              ? 'text-info'
               : 'text-gray-400'
           }`}
         >

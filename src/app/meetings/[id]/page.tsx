@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowRight, Calendar, Clock, MapPin, Users, CheckCircle, XCircle, HelpCircle, FileText, Mic, Video } from 'lucide-react'
+import { ArrowRight, Calendar, MapPin, Users, CheckCircle, XCircle, HelpCircle, FileText, Mic, Video } from 'lucide-react'
 import { meetings } from '@/data/mock'
-import type { Meeting, MeetingStatus, MeetingRole } from '@/types/meeting'
+import type { Meeting } from '@/types/meeting'
 import StatusBadge from '@/components/common/StatusBadge'
 import Button from '@/components/common/Button'
 import ProgressStepper from '@/components/ProgressStepper'
@@ -50,22 +50,6 @@ function getReason(meeting: Meeting): string {
   return '회의 확정을 위해 필요한 조건을 확인해주세요.'
 }
 
-function getOrganizerCta(status: MeetingStatus, hasDeclinedRequired: boolean, meetingId: string) {
-  switch (status) {
-    case 'pending':
-      return { text: '참석 요청 보내기', href: '#' }
-    case 'response_collecting':
-      return { text: '미응답자에게 다시 요청하기', href: '#' }
-    case 'response_complete':
-      return {
-        text: hasDeclinedRequired ? '대체 참석자 선택하기' : '회의 확정하기',
-        href: hasDeclinedRequired ? `/meetings/${meetingId}/replacement` : '#',
-      }
-    case 'confirmed':
-      return { text: '확정 정보 보기', href: '#' }
-  }
-}
-
 function ResponseSummary({ meeting }: { meeting: Meeting }) {
   const approved = meeting.participants.filter((p) => p.responseStatus === 'approved').length
   const declined = meeting.participants.filter((p) => p.responseStatus === 'declined').length
@@ -105,12 +89,12 @@ function ResponseSummary({ meeting }: { meeting: Meeting }) {
       </div>
 
       <div className="flex gap-3">
-        <span className="inline-flex items-center gap-1 text-caption text-green-600">
+        <span className="inline-flex items-center gap-1 text-caption text-success">
           <CheckCircle className="h-3.5 w-3.5" />
           {approved}
         </span>
         {declined > 0 && (
-          <span className="inline-flex items-center gap-1 text-caption text-red-500">
+          <span className="inline-flex items-center gap-1 text-caption text-danger">
             <XCircle className="h-3.5 w-3.5" />
             {declined}
           </span>
@@ -127,8 +111,8 @@ function ResponseSummary({ meeting }: { meeting: Meeting }) {
 }
 
 const summaryLabel: Record<string, { label: string; className: string }> = {
-  approved: { label: '승인', className: 'bg-green-50 text-green-700' },
-  declined: { label: '불참', className: 'bg-red-50 text-red-700' },
+  approved: { label: '승인', className: 'bg-success-bg text-success' },
+  declined: { label: '불참', className: 'bg-danger-bg text-danger' },
   pending: { label: '미응답', className: 'bg-gray-100 text-gray-600' },
 }
 
@@ -140,7 +124,7 @@ export default async function MeetingProgressPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const { id } = await params
-  const { source } = await searchParams
+  const { source, view, response } = await searchParams
 
   if (source === 'new') {
     return <DynamicMeetingPage id={id} />
@@ -157,7 +141,7 @@ export default async function MeetingProgressPage({
     const rightPanel = (
       <div className="hidden lg:flex lg:flex-col lg:gap-5">
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-gray-900">회의 정보</h3>
+          <h3 className="text-title font-semibold text-gray-900">회의 정보</h3>
           <dl className="mt-3 space-y-2 text-body-sm text-gray-600">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-gray-400" />
@@ -176,13 +160,13 @@ export default async function MeetingProgressPage({
           </dl>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-gray-900">참석자</h3>
+          <h3 className="text-title font-semibold text-gray-900">참석자</h3>
           <div className="mt-3">
             <ParticipantList participants={meeting.participants} />
           </div>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-gray-900">다음 액션</h3>
+          <h3 className="text-title font-semibold text-gray-900">다음 액션</h3>
           <p className="mt-2 text-body-sm leading-relaxed text-gray-600">
             회의록과 기록 파일을 확인한 뒤 후속 액션을 업무 채널에 공유할 수 있습니다.
           </p>
@@ -263,18 +247,39 @@ export default async function MeetingProgressPage({
     )
   }
 
+  const isResponseStatusView = view === 'response-status'
+  const isRespondView = view === 'respond'
+  const responseChoice = response === 'approved' || response === 'declined' ? response : null
+  const responseTargetId = meeting.participants.find((p) => p.responseStatus === 'pending')?.id
+  const viewMeeting: Meeting = responseChoice && responseTargetId
+    ? {
+      ...meeting,
+      status: meeting.status === 'pending' ? 'response_collecting' : meeting.status,
+      participants: meeting.participants.map((participant) =>
+        participant.id === responseTargetId
+          ? {
+            ...participant,
+            responseStatus: responseChoice,
+            respondedAt: new Date().toISOString(),
+          }
+          : participant,
+      ),
+    }
+    : meeting
+
   const summary = {
-    approved: meeting.participants.filter((p) => p.responseStatus === 'approved').length,
-    declined: meeting.participants.filter((p) => p.responseStatus === 'declined').length,
-    pending: meeting.participants.filter((p) => p.responseStatus === 'pending').length,
+    approved: viewMeeting.participants.filter((p) => p.responseStatus === 'approved').length,
+    declined: viewMeeting.participants.filter((p) => p.responseStatus === 'declined').length,
+    pending: viewMeeting.participants.filter((p) => p.responseStatus === 'pending').length,
   }
 
-  const hasDeclinedRequired = meeting.participants.some(
+  const hasDeclinedRequired = viewMeeting.participants.some(
     (p) => p.isRequired && p.responseStatus === 'declined',
   )
 
-  const isConfirmed = meeting.status === 'confirmed'
-  const needsReplacement = meeting.status === 'response_complete' && hasDeclinedRequired
+  const isConfirmed = viewMeeting.status === 'confirmed'
+  const needsReplacement = viewMeeting.status === 'response_complete' && hasDeclinedRequired
+  const pageRole = isResponseStatusView ? 'organizer' : isRespondView ? 'participant' : viewMeeting.myRole
 
   const headerSection = (
     <>
@@ -282,19 +287,19 @@ export default async function MeetingProgressPage({
         <div className="min-w-0 flex-1">
           <h1 className="text-heading-s font-semibold text-gray-900">{meeting.title}</h1>
           <p className="mt-1 text-body-sm text-gray-500">
-            {formatDate(meeting.createdAt)}
-            {meeting.location && ` · ${meeting.location}`}
+            {formatDate(viewMeeting.createdAt)}
+            {viewMeeting.location && ` · ${viewMeeting.location}`}
           </p>
         </div>
       </div>
       <div className="mt-4 flex items-center gap-3">
-        <StatusBadge status={meeting.status} />
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium ${
-          meeting.myRole === 'organizer'
+        <StatusBadge status={viewMeeting.status} />
+        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium ${
+          pageRole === 'organizer'
             ? 'bg-gray-100 text-gray-700'
             : 'bg-gray-100 text-gray-600'
         }`}>
-          {meeting.myRole === 'organizer' ? '주최자' : '참석자'}
+          {isResponseStatusView ? '응답 확인' : pageRole === 'organizer' ? '주최자' : '참석자'}
         </span>
       </div>
     </>
@@ -307,64 +312,80 @@ export default async function MeetingProgressPage({
           <span className="text-caption font-bold text-warning">!</span>
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-title font-semibold text-gray-900">
             {needsReplacement ? '대체 참석자 선택이 필요해요' : '회의를 확정할 수 없는 이유'}
           </h3>
           <p className="mt-1 text-body-sm leading-relaxed text-gray-700">
-            {getReason(meeting)}
+            {getReason(viewMeeting)}
           </p>
         </div>
       </div>
     </section>
   )
 
-  const participantResponseSection = meeting.myRole === 'participant' && (
+  const participantResponseSection = pageRole === 'participant' && (
     <div className="rounded-xl bg-gray-50 p-5">
-      <h3 className="text-sm font-semibold text-gray-900">내 응답</h3>
-      <p className="mt-1 text-body-sm text-gray-500">참석 여부를 선택해주세요.</p>
-      <div className="mt-3 flex gap-2">
-        <Button variant="primary" className="flex-1 gap-1.5">
-          <CheckCircle className="h-4 w-4" />
-          <span>참석</span>
-        </Button>
-        <Button variant="secondary" className="flex-1 gap-1.5">
-          <XCircle className="h-4 w-4" />
-          <span>불참</span>
-        </Button>
-      </div>
+      <h3 className="text-title font-semibold text-gray-900">내 응답</h3>
+      {responseChoice ? (
+        <div className="mt-3 rounded-[8px] border border-gray-200 bg-white px-4 py-3">
+          <p className="text-body-sm font-medium text-gray-900">
+            {responseChoice === 'approved' ? '참석으로 응답했습니다.' : '불참으로 응답했습니다.'}
+          </p>
+          <p className="mt-1 text-caption text-gray-600">
+            응답 현황과 참석자 목록에 바로 반영되었습니다.
+          </p>
+        </div>
+      ) : (
+        <>
+          <p className="mt-1 text-body-sm text-gray-500">참석 여부를 선택해주세요.</p>
+          <div className="mt-3 flex gap-2">
+            <Button href={`/meetings/${meeting.id}?view=respond&response=approved`} variant="primary" className="flex-1 gap-1.5">
+              <CheckCircle className="h-4 w-4" />
+              <span>참석</span>
+            </Button>
+            <Button href={`/meetings/${meeting.id}?view=respond&response=declined`} variant="secondary" className="flex-1 gap-1.5">
+              <XCircle className="h-4 w-4" />
+              <span>불참</span>
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   )
 
   const rightPanel = (
     <div className="hidden lg:flex lg:flex-col lg:gap-5">
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900">응답 현황</h3>
+        <h3 className="text-title font-semibold text-gray-900">응답 현황</h3>
         <div className="mt-3">
-          <ResponseSummary meeting={meeting} />
+          <ResponseSummary meeting={viewMeeting} />
         </div>
       </div>
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900">참석자 목록</h3>
+        <h3 className="text-title font-semibold text-gray-900">참석자 목록</h3>
         <div className="mt-3">
-          <ParticipantList participants={meeting.participants} />
+          <ParticipantList
+            participants={viewMeeting.participants}
+            enableReminderActions={pageRole === 'organizer' && summary.pending > 0}
+          />
         </div>
       </div>
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900">회의 정보</h3>
+        <h3 className="text-title font-semibold text-gray-900">회의 정보</h3>
         <dl className="mt-2 space-y-2 text-body-sm text-gray-600">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-gray-400" />
-            <dd>{meeting.organizerName}</dd>
+            <dd>{viewMeeting.organizerName}</dd>
           </div>
-          {meeting.location && (
+          {viewMeeting.location && (
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-gray-400" />
-              <dd>{meeting.location}</dd>
+              <dd>{viewMeeting.location}</dd>
             </div>
           )}
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-gray-400" />
-            <dd>{formatDate(meeting.createdAt)}</dd>
+            <dd>{formatDate(viewMeeting.createdAt)}</dd>
           </div>
         </dl>
       </div>
@@ -386,10 +407,10 @@ export default async function MeetingProgressPage({
       <PageLayout hideSidebar right={rightPanel}>
         {/* Mobile: single column */}
         <div className="lg:hidden space-y-5">
-          {meeting.myRole === 'participant' ? (
+          {pageRole === 'participant' ? (
             <>
               {participantResponseSection}
-              <ProgressStepper status={meeting.status} myRole="participant" />
+              <ProgressStepper status={viewMeeting.status} myRole="participant" />
               <div>
                 <h3 className="text-title font-semibold text-gray-900">응답 현황</h3>
                 <div className="mt-3 flex gap-2">
@@ -408,8 +429,8 @@ export default async function MeetingProgressPage({
           ) : (
             <>
               {organizerReasonSection}
-              <ConfirmConditions meeting={meeting} />
-              <ProgressStepper status={meeting.status} myRole="organizer" />
+              <ConfirmConditions meeting={viewMeeting} />
+              <ProgressStepper status={viewMeeting.status} myRole="organizer" />
               <div>
                 <h3 className="text-title font-semibold text-gray-900">응답 현황</h3>
                 <div className="mt-3 flex gap-2">
@@ -426,7 +447,7 @@ export default async function MeetingProgressPage({
               </div>
               {needsReplacement && (
                 <Button
-                  href={`/meetings/${meeting.id}/replacement`}
+                  href={`/meetings/${viewMeeting.id}/replacement`}
                   variant="primary"
                   className="w-full justify-between"
                 >
@@ -434,7 +455,7 @@ export default async function MeetingProgressPage({
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               )}
-              {!isConfirmed && !needsReplacement && meeting.status === 'response_complete' && (
+              {!isConfirmed && !needsReplacement && viewMeeting.status === 'response_complete' && (
                 <Button className="w-full justify-between">
                   <span>회의 확정하기</span>
                   <ArrowRight className="h-5 w-5" />
@@ -445,7 +466,10 @@ export default async function MeetingProgressPage({
           <div>
             <h3 className="text-title font-semibold text-gray-900">참석자 목록</h3>
             <div className="mt-3">
-              <ParticipantList participants={meeting.participants} />
+              <ParticipantList
+                participants={viewMeeting.participants}
+                enableReminderActions={pageRole === 'organizer' && summary.pending > 0}
+              />
             </div>
           </div>
           <div className="border-t border-gray-100 pt-5">
@@ -453,15 +477,15 @@ export default async function MeetingProgressPage({
             <dl className="mt-2 space-y-1 text-body-sm text-gray-600">
               <div className="flex gap-1">
                 <dt>주최자</dt>
-                <dd>{meeting.organizerName}</dd>
+                <dd>{viewMeeting.organizerName}</dd>
               </div>
               <div className="flex gap-1">
                 <dt>장소</dt>
-                <dd>{meeting.location}</dd>
+                <dd>{viewMeeting.location}</dd>
               </div>
               <div className="flex gap-1">
                 <dt>생성일</dt>
-                <dd>{formatDate(meeting.createdAt)}</dd>
+                <dd>{formatDate(viewMeeting.createdAt)}</dd>
               </div>
             </dl>
           </div>
@@ -469,40 +493,40 @@ export default async function MeetingProgressPage({
 
         {/* Desktop: center column — action & progress */}
         <div className="hidden lg:block space-y-6">
-          {meeting.myRole === 'participant' ? (
+          {pageRole === 'participant' ? (
             <>
               {participantResponseSection}
               <div className="rounded-xl border border-gray-200 bg-white p-5">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">진행 단계</h3>
-                <ProgressStepper status={meeting.status} myRole="participant" />
+                <h3 className="text-title font-semibold text-gray-900 mb-4">진행 단계</h3>
+                <ProgressStepper status={viewMeeting.status} myRole="participant" />
               </div>
             </>
           ) : (
             <>
               {organizerReasonSection}
-              <ConfirmConditions meeting={meeting} />
+              <ConfirmConditions meeting={viewMeeting} />
               <div className="rounded-xl border border-gray-200 bg-white p-5">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">진행 단계</h3>
-                <ProgressStepper status={meeting.status} myRole="organizer" />
+                <h3 className="text-title font-semibold text-gray-900 mb-4">진행 단계</h3>
+                <ProgressStepper status={viewMeeting.status} myRole="organizer" />
               </div>
               {needsReplacement && (
                 <Button
-                  href={`/meetings/${meeting.id}/replacement`}
+                  href={`/meetings/${viewMeeting.id}/replacement`}
                   variant="primary"
-                  className="w-full justify-between text-base"
+                  className="w-full justify-between"
                 >
                   <span>대체 참석자 선택하기</span>
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               )}
-              {!isConfirmed && !needsReplacement && meeting.status === 'response_complete' && (
-                <Button className="w-full justify-between text-base">
+              {!isConfirmed && !needsReplacement && viewMeeting.status === 'response_complete' && (
+                <Button className="w-full justify-between">
                   <span>회의 확정하기</span>
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               )}
               {isConfirmed && (
-                <Button className="w-full justify-between text-base">
+                <Button className="w-full justify-between">
                   <span>확정 정보 보기</span>
                   <ArrowRight className="h-5 w-5" />
                 </Button>

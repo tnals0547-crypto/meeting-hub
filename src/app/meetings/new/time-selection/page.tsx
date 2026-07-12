@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Loader2, Calendar, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { teamMembers } from '@/data/mock'
 import { generateTimeSlots, sortSlots } from '@/data/availability'
 import type {
@@ -11,9 +11,10 @@ import type {
   Meeting,
   Participant,
   MeetingStatus,
+  TimeSlot,
+  TimeSlotWithAvailability,
 } from '@/types/meeting'
 import TimeSlotCard from '@/components/TimeSlotCard'
-import Button from '@/components/common/Button'
 import PageLayout from '@/components/layout/PageLayout'
 import { SkeletonCard } from '@/components/common/Skeleton'
 import ErrorState from '@/components/common/ErrorState'
@@ -22,35 +23,45 @@ import EmptyState from '@/components/common/EmptyState'
 interface NewMeetingForm {
   title: string
   description: string
+  noticeMessage?: string
   meetingType: string
   duration: MeetingDuration
   requiredMembers: { id: string; name: string; department: string; role: string }[]
   optionalMembers: { id: string; name: string; department: string; role: string }[]
   startDate: string
   endDate: string
+  manualTimeSlot?: TimeSlot | null
+}
+
+function readStoredForm(): { formData: NewMeetingForm | null; error: string | null; shouldRedirect: boolean } {
+  if (typeof window === 'undefined') {
+    return { formData: null, error: null, shouldRedirect: false }
+  }
+
+  const stored = sessionStorage.getItem('newMeetingForm')
+  if (!stored) {
+    return { formData: null, error: null, shouldRedirect: true }
+  }
+
+  try {
+    return { formData: JSON.parse(stored), error: null, shouldRedirect: false }
+  } catch {
+    return { formData: null, error: '회의 정보를 불러오는 중 오류가 발생했습니다.', shouldRedirect: false }
+  }
 }
 
 export default function TimeSelectionPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState<NewMeetingForm | null>(null)
+  const [initialState] = useState(() => readStoredForm())
+  const formData = initialState.formData
+  const error = initialState.error
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('newMeetingForm')
-    if (!stored) {
+    if (initialState.shouldRedirect) {
       router.replace('/meetings/new')
-      return
     }
-    try {
-      setFormData(JSON.parse(stored))
-    } catch {
-      setError('회의 정보를 불러오는 중 오류가 발생했습니다.')
-    } finally {
-      setLoading(false)
-    }
-  }, [router])
+  }, [initialState.shouldRedirect, router])
 
   const memberNames = useMemo(() => {
     const names: Record<string, string> = {}
@@ -65,6 +76,7 @@ export default function TimeSelectionPage() {
     try {
       const requiredIds = formData.requiredMembers.map((m) => m.id)
       const optionalIds = formData.optionalMembers.map((m) => m.id)
+      const allIds = [...requiredIds, ...optionalIds]
 
       const slots = generateTimeSlots(
         formData.startDate,
@@ -78,7 +90,31 @@ export default function TimeSelectionPage() {
         (s) => s.allRequiredAvailable || s.availableMemberIds.length >= requiredIds.length,
       )
 
-      return sortSlots(viable)
+      const sortedSlots = sortSlots(viable)
+
+      if (!formData.manualTimeSlot) return sortedSlots
+
+      const manualSlot: TimeSlotWithAvailability = {
+        date: formData.manualTimeSlot.date,
+        startTime: formData.manualTimeSlot.startTime,
+        endTime: formData.manualTimeSlot.endTime,
+        availableMemberIds: [],
+        preferenceConflicts: [],
+        totalMemberCount: allIds.length,
+        requiredAvailableCount: 0,
+        requiredTotalCount: requiredIds.length,
+        allRequiredAvailable: false,
+        hasPreferenceConflict: false,
+        requestMode: 'manual',
+      }
+
+      const withoutDuplicate = sortedSlots.filter((slot) =>
+        slot.date !== manualSlot.date ||
+        slot.startTime !== manualSlot.startTime ||
+        slot.endTime !== manualSlot.endTime,
+      )
+
+      return [manualSlot, ...withoutDuplicate]
     } catch {
       return []
     }
@@ -120,6 +156,7 @@ export default function TimeSelectionPage() {
       id: newId,
       title: formData.title,
       description: formData.description,
+      noticeMessage: formData.noticeMessage?.trim() || undefined,
       location: '',
       createdAt: new Date().toISOString(),
       organizerName: '나',
@@ -138,7 +175,7 @@ export default function TimeSelectionPage() {
     router.push(`/meetings/${newId}?source=new`)
   }
 
-  if (loading) {
+  if (typeof window === 'undefined') {
     return (
       <div className="flex min-h-full flex-col items-center bg-gray-50">
         <main className="flex w-full max-w-xl flex-col gap-4 px-6 py-10">
