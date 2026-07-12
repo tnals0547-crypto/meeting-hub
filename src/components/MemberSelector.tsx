@@ -39,7 +39,7 @@ export default function MemberSelector({
     <div>
       <div className="flex items-center justify-between">
         <span className="text-title font-semibold text-gray-900">참석자</span>
-        <span className="text-caption text-gray-600">{total}/6명</span>
+        <span className="text-body-sm text-gray-600">{total}/6명</span>
       </div>
 
       <button
@@ -59,24 +59,24 @@ export default function MemberSelector({
             availableMembers.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center justify-between border-b border-gray-100 px-4 py-3 last:border-b-0"
+                className="flex flex-col gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0 min-[520px]:flex-row min-[520px]:items-center min-[520px]:justify-between"
               >
-                <div>
+                <div className="min-w-0">
                   <p className="text-title font-medium text-gray-900">{member.name}</p>
-                  <p className="text-body-sm text-gray-600">
+                  <p className="break-keep text-body-sm text-gray-600">
                     {member.department} · {member.role}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-2 min-[520px]:flex min-[520px]:shrink-0">
                   <button
                     onClick={() => onAddRequired(member)}
-                    className="inline-flex h-7 items-center rounded-[8px] bg-gray-900 px-2.5 text-caption font-medium text-white transition-colors hover:bg-gray-800"
+                    className="inline-flex min-h-8 items-center justify-center rounded-[8px] bg-info px-2.5 text-body-sm font-medium text-white transition-opacity hover:opacity-90 min-[520px]:h-8 min-[520px]:whitespace-nowrap"
                   >
                     필수로 추가
                   </button>
                   <button
                     onClick={() => onAddOptional(member)}
-                    className="inline-flex h-7 items-center rounded-[8px] bg-gray-100 px-2.5 text-caption font-medium text-gray-600 transition-colors hover:bg-gray-200"
+                    className="inline-flex min-h-8 items-center justify-center rounded-[8px] bg-gray-100 px-2.5 text-body-sm font-medium text-gray-600 transition-colors hover:bg-gray-200 min-[520px]:h-8 min-[520px]:whitespace-nowrap"
                   >
                     선택으로 추가
                   </button>

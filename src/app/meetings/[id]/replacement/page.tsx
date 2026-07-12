@@ -113,7 +113,7 @@ function SummaryCard({ meeting }: { meeting: Meeting }) {
 
       <div className="mt-3 flex items-end gap-6">
         <div>
-          <p className="text-caption text-gray-500">현재</p>
+          <p className="text-body-sm text-gray-500">현재</p>
           <p className="mt-1 text-heading-l font-bold text-gray-500">
             {approved}
             <span className="text-title font-normal text-gray-300">/{total}</span>
@@ -125,7 +125,7 @@ function SummaryCard({ meeting }: { meeting: Meeting }) {
         </div>
 
         <div>
-          <p className="text-caption font-medium text-gray-900">완료 시</p>
+          <p className="text-body-sm font-medium text-gray-900">완료 시</p>
           <p className="mt-1 text-heading-l font-bold text-gray-900">
             {approved + 1}
             <span className="text-title font-normal text-gray-600">/{total}</span>
@@ -135,12 +135,12 @@ function SummaryCard({ meeting }: { meeting: Meeting }) {
 
       <div className="mt-3 h-2 rounded-full bg-gray-200 overflow-hidden">
         <div
-          className="h-full rounded-full bg-gray-900 transition-all"
+          className="h-full rounded-full bg-info transition-all"
           style={{ width: `${Math.min(afterPercent, 100)}%` }}
         />
       </div>
 
-      <div className="mt-1.5 flex items-center justify-between text-caption">
+      <div className="mt-1.5 flex items-center justify-between text-body-sm">
         <span className="text-gray-500">{Math.round((approved / total) * 100)}%</span>
         <span className="inline-flex items-center gap-1 font-semibold text-success">
           <CheckCircle className="h-3.5 w-3.5" />
@@ -159,7 +159,7 @@ function StepIndicator({ current }: { current: number }) {
           <span
             className={`inline-flex h-6 items-center rounded-full px-2.5 text-caption font-medium ${
               i <= current
-                ? 'bg-gray-900 text-white'
+                ? 'bg-info text-white'
                 : 'bg-gray-100 text-gray-400'
             }`}
           >
@@ -257,7 +257,7 @@ function MemberCard({
             <h3 className="text-title font-semibold text-gray-900">{candidate.name}</h3>
             <p className="text-body-sm text-gray-500">{candidate.department} · {candidate.role}</p>
           </div>
-          <span className="inline-flex shrink-0 items-center gap-1 text-caption text-gray-500">
+          <span className="inline-flex shrink-0 items-center gap-1 text-body-sm text-gray-500">
             <StatusDot dotClass={avail.dotClass} />
             {avail.label}
           </span>
@@ -300,7 +300,7 @@ function MemberCard({
           <h3 className="text-title font-semibold text-gray-900">{candidate.name}</h3>
           <p className="text-body-sm text-gray-500">{candidate.department} · {candidate.role}</p>
         </div>
-        <span className="inline-flex shrink-0 items-center gap-1 text-caption text-gray-500">
+        <span className="inline-flex shrink-0 items-center gap-1 text-body-sm text-gray-500">
           <StatusDot dotClass={avail.dotClass} />
           {avail.label}
         </span>

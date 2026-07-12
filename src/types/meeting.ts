@@ -28,7 +28,7 @@ export interface Participant {
 
 export type AvailabilityStatus = 'available' | 'in_meeting' | 'focused' | 'on_leave'
 
-export type MeetingDuration = '30m' | '60m' | '90m' | '120m'
+export type MeetingDuration = '30m' | '60m' | '90m' | '120m' | 'custom'
 
 export interface TimeSlotWithAvailability {
   date: string

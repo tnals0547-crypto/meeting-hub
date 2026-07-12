@@ -6,7 +6,7 @@ export default function ChatPage() {
       <section className="flex min-h-[520px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="border-b border-gray-100 px-5 py-4">
           <h1 className="text-heading-s font-semibold text-gray-900">채팅</h1>
-          <p className="mt-0.5 text-caption text-gray-500">회의 관련 대화를 한 곳에서 확인합니다.</p>
+          <p className="mt-0.5 text-body-sm text-gray-500">회의 관련 대화를 한 곳에서 확인합니다.</p>
         </div>
         <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
           <MessageSquare className="h-12 w-12 text-gray-300" />

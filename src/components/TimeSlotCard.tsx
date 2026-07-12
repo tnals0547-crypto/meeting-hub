@@ -72,7 +72,7 @@ export default function TimeSlotCard({
 
         {preferenceConflicts.length > 0 && (
           <div className="mt-3 rounded-[8px] border border-warning/20 bg-warning-bg px-3 py-2">
-            <p className="text-caption font-medium text-warning">일정 조율 권장</p>
+            <p className="text-body-sm font-medium text-warning">일정 조율 권장</p>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {conflictPreview.map((conflict) => (
                 <span key={`${conflict.memberId}-${conflict.reason}`} className="rounded-full bg-white px-2 py-0.5 text-caption text-warning">
@@ -90,7 +90,7 @@ export default function TimeSlotCard({
 
         {availableMemberIds.length > 0 && (
           <div className="mt-4">
-            <p className="text-caption text-gray-600">가능한 참석자</p>
+            <p className="text-body-sm text-gray-600">가능한 참석자</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {availableMemberIds.map((mid) => (
                 <span
@@ -130,7 +130,7 @@ export default function TimeSlotCard({
         <p className="text-sm font-medium text-gray-900">
           {availableMemberIds.length}/{totalMemberCount}명 가능
         </p>
-        <p className="text-xs text-gray-500">
+        <p className="text-body-sm text-gray-500">
           {isManualRequest
             ? '응답 확인 필요'
             : allRequiredAvailable
@@ -138,7 +138,7 @@ export default function TimeSlotCard({
             : `필수 ${requiredAvailableCount}/${requiredTotalCount}`}
         </p>
         {preferenceConflicts[0] && (
-          <p className="mt-1 max-w-[180px] truncate text-caption text-warning">
+          <p className="mt-1 max-w-[180px] truncate text-body-sm text-warning">
             {preferenceConflicts[0].memberName}님 일정 조율 권장
           </p>
         )}

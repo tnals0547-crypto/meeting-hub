@@ -62,10 +62,10 @@ export default function MeetingTable({
         <thead>
           <tr className="border-b border-border-subtle bg-surface-subtle">
             <th className="w-1" />
-            <th className="px-4 py-3 text-left text-caption font-medium text-gray-600">회의명</th>
-            <th className="px-4 py-3 text-left text-caption font-medium text-gray-600">내 역할</th>
-            <th className="px-4 py-3 text-left text-caption font-medium text-gray-600">상태</th>
-            <th className="px-4 py-3 text-right text-caption font-medium text-gray-600">다음 행동</th>
+            <th className="px-4 py-3 text-left text-body-sm font-medium text-gray-600">회의명</th>
+            <th className="px-4 py-3 text-left text-body-sm font-medium text-gray-600">내 역할</th>
+            <th className="px-4 py-3 text-left text-body-sm font-medium text-gray-600">상태</th>
+            <th className="px-4 py-3 text-right text-body-sm font-medium text-gray-600">다음 행동</th>
           </tr>
         </thead>
         <tbody>
@@ -92,7 +92,7 @@ export default function MeetingTable({
                 <td className="px-4 py-3">
                   <div className="flex flex-col">
                     <span className="text-title font-medium text-gray-900">{meeting.title}</span>
-                    <span className="text-caption text-gray-500 mt-0.5">
+                    <span className="text-body-sm text-gray-500 mt-0.5">
                       {responded}/{total} 응답 · {scheduleLabel}
                     </span>
                   </div>

@@ -87,12 +87,12 @@ export default function ConfirmConditions({ meeting }: ConfirmConditionsProps) {
 
       <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-100">
         <div
-          className="h-full rounded-full transition-all bg-gray-900"
+          className="h-full rounded-full bg-info transition-all"
           style={{ width: `${percent}%` }}
         />
       </div>
 
-      <p className="mt-1.5 text-caption text-gray-500">
+      <p className="mt-1.5 text-body-sm text-gray-500">
         {remaining > 0
           ? `남은 작업 ${remaining}개`
           : '모든 조건을 충족했습니다'}
@@ -104,9 +104,9 @@ export default function ConfirmConditions({ meeting }: ConfirmConditionsProps) {
             <span
               className={`flex items-center justify-center w-5 h-5 rounded-full shrink-0 ${
                 c.status === 'done'
-                  ? 'bg-gray-900 text-white'
+                  ? 'bg-info text-white'
                   : c.status === 'current'
-                    ? 'bg-gray-700 text-white'
+                    ? 'bg-info text-white ring-4 ring-info-bg'
                     : 'bg-gray-200 text-gray-400'
               }`}
             >
@@ -124,7 +124,7 @@ export default function ConfirmConditions({ meeting }: ConfirmConditionsProps) {
               {c.title}
             </span>
             {c.detail && (
-              <span className="text-caption text-gray-500">
+              <span className="text-body-sm text-gray-500">
                 ({c.detail})
               </span>
             )}

@@ -25,13 +25,18 @@ const DURATION_OPTIONS: { value: MeetingDuration; label: string }[] = [
   { value: '60m', label: '1시간' },
   { value: '90m', label: '1시간 30분' },
   { value: '120m', label: '2시간' },
+  { value: 'custom', label: '기타' },
 ]
 
-const DURATION_LABEL: Record<MeetingDuration, string> = {
+const DURATION_LABEL: Record<Exclude<MeetingDuration, 'custom'>, string> = {
   '30m': '30분',
   '60m': '1시간',
   '90m': '1시간 30분',
   '120m': '2시간',
+}
+
+function getDurationLabel(duration: MeetingDuration, customDurationMinutes: number) {
+  return duration === 'custom' ? `${customDurationMinutes}분` : DURATION_LABEL[duration]
 }
 
 interface CandidateSlot {
@@ -131,6 +136,7 @@ export default function NewMeetingPage() {
   const [noticeMessage, setNoticeMessage] = useState('')
   const [meetingType, setMeetingType] = useState<MeetingType>('face_to_face')
   const [duration, setDuration] = useState<MeetingDuration>('60m')
+  const [customDurationMinutes, setCustomDurationMinutes] = useState(45)
   const [requiredMembers, setRequiredMembers] = useState<TeamMember[]>([])
   const [optionalMembers, setOptionalMembers] = useState<TeamMember[]>([])
   const [startDate, setStartDate] = useState(todayDate)
@@ -185,6 +191,7 @@ export default function NewMeetingPage() {
       noticeMessage,
       meetingType,
       duration,
+      customDurationMinutes,
       requiredMembers,
       optionalMembers,
       startDate: normalizedStartDate,
@@ -220,6 +227,7 @@ export default function NewMeetingPage() {
       duration,
       requiredIds,
       optionalIds,
+      { customDurationMinutes },
     )).slice(0, 3).map((slot) => {
       const availableCount = slot.availableMemberIds.length
       const unavailableCount = slot.totalMemberCount - availableCount
@@ -245,7 +253,7 @@ export default function NewMeetingPage() {
       }
     })
 
-  const effectiveSelectedIdx = selectedCandidateIdx != null && selectedCandidateIdx < candidateSlots.length
+  const effectiveSelectedIdx = !manualTimeEnabled && selectedCandidateIdx != null && selectedCandidateIdx < candidateSlots.length
     ? selectedCandidateIdx
     : candidateSlots.length > 0 ? 0 : null
   const manualSelectedSlot: CandidateSlot | null = manualTimeEnabled ? {
@@ -279,7 +287,7 @@ export default function NewMeetingPage() {
         </div>
         <div className="flex justify-between text-title">
           <dt className="text-gray-600">길이</dt>
-          <dd className="font-medium text-gray-900">{DURATION_LABEL[duration]}</dd>
+          <dd className="font-medium text-gray-900">{getDurationLabel(duration, customDurationMinutes)}</dd>
         </div>
         <div className="flex justify-between text-title">
           <dt className="text-gray-600">참석자</dt>
@@ -301,19 +309,19 @@ export default function NewMeetingPage() {
         <>
           <hr className="my-4 border-gray-100" />
           <div className="space-y-3">
-            <p className="text-caption font-semibold text-gray-500 uppercase tracking-wider">선택한 후보 시간</p>
+            <p className="text-body-sm font-semibold text-gray-500 uppercase tracking-wider">선택한 후보 시간</p>
             <div className="rounded-lg border border-l-4 border-gray-200 border-l-info bg-gray-50 p-3">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-body-sm font-semibold text-gray-900">{selectedSlot.dayLabel}</p>
-                  <p className="text-body-sm text-gray-600">{selectedSlot.startTime} ~ {selectedSlot.endTime} · {DURATION_LABEL[duration]}</p>
+                  <p className="text-body-sm text-gray-600">{selectedSlot.startTime} ~ {selectedSlot.endTime} · {getDurationLabel(duration, customDurationMinutes)}</p>
                 </div>
                 <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption font-medium ${statusConfig[selectedSlot.status].className}`}>
                   {statusConfig[selectedSlot.status].icon}
                   {statusConfig[selectedSlot.status].label}
                 </span>
               </div>
-              <div className="mt-2 flex gap-3 text-caption text-gray-500">
+              <div className="mt-2 flex gap-3 text-body-sm text-gray-500">
                 <span className="inline-flex items-center gap-1">
                   <Users className="h-3 w-3 text-gray-400" />
                   가능 {selectedSlot.availableCount}/{selectedSlot.totalCount}
@@ -358,7 +366,7 @@ export default function NewMeetingPage() {
       <div className="flex items-center justify-between">
         <h3 className="text-title font-semibold text-gray-900">가능한 시간 후보</h3>
         {totalMembers > 0 && (
-          <span className="text-caption text-gray-400">{candidateSlots.length}개</span>
+          <span className="text-body-sm text-gray-400">{candidateSlots.length}개</span>
         )}
       </div>
 
@@ -382,7 +390,10 @@ export default function NewMeetingPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setManualTimeEnabled((enabled) => !enabled)}
+                onClick={() => {
+                  setManualTimeEnabled((enabled) => !enabled)
+                  setSelectedCandidateIdx(null)
+                }}
                 className={`shrink-0 rounded-[8px] border px-3 py-2 text-body-sm font-medium transition-colors ${
                   manualTimeEnabled
                     ? 'border-warning/20 bg-warning-bg text-warning'
@@ -396,7 +407,7 @@ export default function NewMeetingPage() {
             {manualTimeEnabled && (
               <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_120px_120px]">
                 <label className="block">
-                  <span className="text-caption text-gray-600">요청일</span>
+                  <span className="text-body-sm text-gray-600">요청일</span>
                   <input
                     type="date"
                     value={normalizedManualDate}
@@ -407,7 +418,7 @@ export default function NewMeetingPage() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-caption text-gray-600">시작</span>
+                  <span className="text-body-sm text-gray-600">시작</span>
                   <input
                     type="time"
                     value={manualStartTime}
@@ -417,7 +428,7 @@ export default function NewMeetingPage() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-caption text-gray-600">종료</span>
+                  <span className="text-body-sm text-gray-600">종료</span>
                   <input
                     type="time"
                     value={manualEndTime}
@@ -426,7 +437,7 @@ export default function NewMeetingPage() {
                   />
                 </label>
                 {!isManualTimeValid && (
-                  <p className="text-caption text-warning sm:col-span-3">
+                  <p className="text-body-sm text-warning sm:col-span-3">
                     {isManualStartPast ? '오늘 요청은 현재 시간 이후로 선택해주세요.' : '종료 시간은 시작 시간보다 늦어야 해요.'}
                   </p>
                 )}
@@ -451,11 +462,11 @@ export default function NewMeetingPage() {
           <div className="flex flex-col items-center py-8 text-center">
             <CalendarDays className="h-10 w-10 text-gray-300" />
             <p className="mt-3 text-body-sm text-gray-500">선택한 기간 안에서 현재 이후 가능한 시간이 없어요.</p>
-            <p className="mt-1 text-caption text-gray-400">기간을 넓히거나 참석자를 조정해보세요.</p>
+            <p className="mt-1 text-body-sm text-gray-400">기간을 넓히거나 참석자를 조정해보세요.</p>
           </div>
         ) : (
           candidateSlots.map((slot, i) => {
-            const isSelected = effectiveSelectedIdx === i
+            const isSelected = !manualTimeEnabled && effectiveSelectedIdx === i
             const cfg = statusConfig[slot.status]
             return (
               <button
@@ -480,7 +491,7 @@ export default function NewMeetingPage() {
                     <div>
                       <p className="text-body-sm font-semibold text-gray-900">{slot.dayLabel}</p>
                       <p className="text-body-sm text-gray-500">
-                        {slot.startTime} ~ {slot.endTime} · {DURATION_LABEL[duration]}
+                        {slot.startTime} ~ {slot.endTime} · {getDurationLabel(duration, customDurationMinutes)}
                       </p>
                     </div>
                   </div>
@@ -490,7 +501,7 @@ export default function NewMeetingPage() {
                   </span>
                 </div>
 
-                <div className="mt-3 flex items-center gap-3 text-caption text-gray-500">
+                <div className="mt-3 flex items-center gap-3 text-body-sm text-gray-500">
                   <span className="inline-flex items-center gap-1">
                     <Users className="h-3 w-3 text-gray-400" />
                     가능 {slot.availableCount}/{slot.totalCount}
@@ -514,7 +525,7 @@ export default function NewMeetingPage() {
                     </span>
                   )}
                   {isSelected && (
-                    <span className="ml-auto inline-flex items-center gap-1 text-caption font-medium text-gray-700">
+                    <span className="ml-auto inline-flex items-center gap-1 text-body-sm font-medium text-gray-700">
                       선택됨
                       <ChevronRight className="h-3 w-3" />
                     </span>
@@ -570,7 +581,7 @@ export default function NewMeetingPage() {
         <section className="mt-3 rounded-[8px] border border-gray-100 bg-white p-5">
           <div className="flex items-baseline justify-between gap-3">
             <label className="text-title font-semibold text-gray-900">회의 공지 내용</label>
-            <span className="shrink-0 text-caption text-gray-500">선택 입력</span>
+            <span className="shrink-0 text-body-sm text-gray-500">선택 입력</span>
           </div>
           <textarea
             value={noticeMessage}
@@ -579,7 +590,7 @@ export default function NewMeetingPage() {
             placeholder="참석자에게 전달할 안건, 준비사항, 참고 링크를 입력해주세요."
             className="mt-2 w-full resize-none rounded-[8px] border border-gray-200 px-4 py-3 text-body-sm leading-relaxed text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-black"
           />
-          <p className="mt-2 text-caption text-gray-500">
+          <p className="mt-2 text-body-sm text-gray-500">
             입력하지 않아도 회의 요청을 보낼 수 있어요.
           </p>
         </section>
@@ -593,7 +604,7 @@ export default function NewMeetingPage() {
                 onClick={() => setMeetingType(opt.value)}
                 className={`flex-1 rounded-[8px] border px-4 py-3 text-title font-medium transition-colors ${
                   meetingType === opt.value
-                    ? 'border-gray-300 border-l-4 border-l-info bg-white text-gray-900'
+                    ? 'border-info border-l-4 border-l-info bg-white text-gray-900'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -605,14 +616,14 @@ export default function NewMeetingPage() {
 
         <section className="mt-3 rounded-[8px] border border-gray-100 bg-white p-5">
           <label className="text-title font-semibold text-gray-900">회의 시간</label>
-          <div className="mt-3 grid grid-cols-4 gap-2">
+          <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(80px,1fr))] gap-2">
             {DURATION_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setDuration(opt.value)}
-                className={`rounded-[8px] border px-3 py-3 text-title font-medium transition-colors ${
+                className={`flex h-11 min-w-20 items-center justify-center whitespace-nowrap rounded-[8px] border px-4 py-3 text-title font-medium transition-colors ${
                   duration === opt.value
-                    ? 'border-gray-300 border-l-4 border-l-info bg-white text-gray-900'
+                    ? 'border-info border-l-4 border-l-info bg-white text-gray-900'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -620,6 +631,23 @@ export default function NewMeetingPage() {
               </button>
             ))}
           </div>
+          {duration === 'custom' && (
+            <div className="mt-3 max-w-[180px]">
+              <label className="text-body-sm font-semibold text-gray-500">직접 입력</label>
+              <div className="mt-1.5 flex items-center gap-2 rounded-[8px] border border-gray-200 px-3 py-2.5 focus-within:border-info">
+                <input
+                  type="number"
+                  min={10}
+                  max={240}
+                  step={5}
+                  value={customDurationMinutes}
+                  onChange={(e) => setCustomDurationMinutes(Math.min(Math.max(Number(e.target.value) || 10, 10), 240))}
+                  className="w-full bg-transparent text-body-sm text-gray-900 outline-none"
+                />
+                <span className="shrink-0 text-body-sm text-gray-500">분</span>
+              </div>
+            </div>
+          )}
         </section>
 
         <section id="member-selector" className="mt-3 rounded-[8px] border border-gray-100 bg-white p-5">
@@ -637,7 +665,7 @@ export default function NewMeetingPage() {
           <label className="text-title font-semibold text-gray-900">회의 가능 기간</label>
           <div className="mt-3 flex items-center gap-3">
             <div className="flex-1">
-              <p className="text-caption text-gray-600">시작일</p>
+              <p className="text-body-sm text-gray-600">시작일</p>
               <input
                 type="date"
                 value={normalizedStartDate}
@@ -648,7 +676,7 @@ export default function NewMeetingPage() {
             </div>
             <span className="mt-5 text-title text-gray-300">~</span>
             <div className="flex-1">
-              <p className="text-caption text-gray-600">종료일</p>
+              <p className="text-body-sm text-gray-600">종료일</p>
               <input
                 type="date"
                 value={normalizedEndDate}

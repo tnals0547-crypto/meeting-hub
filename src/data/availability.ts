@@ -38,7 +38,7 @@ function overlapsLunch(slotStart: number, slotEnd: number): boolean {
   return slotStart < lunchEnd && slotEnd > lunchStart
 }
 
-const DURATION_MINUTES: Record<MeetingDuration, number> = {
+const DURATION_MINUTES: Record<Exclude<MeetingDuration, 'custom'>, number> = {
   '30m': 30,
   '60m': 60,
   '90m': 90,
@@ -107,9 +107,11 @@ export function generateTimeSlots(
   duration: MeetingDuration,
   requiredMemberIds: string[],
   optionalMemberIds: string[],
-  options: { includeWeekends?: boolean } = {},
+  options: { includeWeekends?: boolean; customDurationMinutes?: number } = {},
 ): TimeSlotWithAvailability[] {
-  const durMin = DURATION_MINUTES[duration]
+  const durMin = duration === 'custom'
+    ? Math.min(Math.max(options.customDurationMinutes ?? 45, 10), 240)
+    : DURATION_MINUTES[duration]
   const allIds = [...requiredMemberIds, ...optionalMemberIds]
   const slots: TimeSlotWithAvailability[] = []
 

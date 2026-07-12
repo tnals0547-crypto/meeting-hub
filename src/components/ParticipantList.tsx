@@ -55,7 +55,7 @@ export default function ParticipantList({ participants, enableReminderActions = 
               <p className="text-body-sm font-medium text-gray-900">
                 미응답자 {pendingIds.length}명
               </p>
-              <p className="mt-0.5 text-caption text-gray-600">
+              <p className="mt-0.5 text-body-sm text-gray-600">
                 요청할 인원을 선택해서 참석 응답을 다시 요청할 수 있어요.
               </p>
             </div>
@@ -90,7 +90,7 @@ export default function ParticipantList({ participants, enableReminderActions = 
                 <button
                   type="button"
                   onClick={() => toggleSelected(p.id)}
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-caption font-bold transition-colors ${
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-body-sm font-bold transition-colors ${
                     isSelected
                       ? 'border-info bg-info text-white'
                       : 'border-gray-300 bg-white text-transparent hover:border-gray-400'
@@ -116,7 +116,7 @@ export default function ParticipantList({ participants, enableReminderActions = 
                     </span>
                   )}
                 </div>
-                <span className="truncate text-caption text-gray-600">
+                <span className="truncate text-body-sm text-gray-600">
                   {p.department} · {p.role}
                 </span>
               </div>

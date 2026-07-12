@@ -144,7 +144,7 @@ export default function HomeContent({ meetings, initialFilter }: HomeContentProp
                         ? `참석자 ${m.participants.length}명 · ${m.participants.filter(p => p.responseStatus === 'approved').length}명 승인`
                         : '참석자 정보 없음')}
                     </p>
-                    <div className="mt-3 flex items-center gap-2 text-caption text-gray-400">
+                    <div className="mt-3 flex items-center gap-2 text-body-sm text-gray-400">
                       <span>{m.organizerName}</span>
                       <span>·</span>
                       <span>{m.location || '장소 미정'}</span>
@@ -180,13 +180,13 @@ export default function HomeContent({ meetings, initialFilter }: HomeContentProp
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div>
                 <h1 className="text-heading-s font-semibold text-gray-900">{pageTitle}</h1>
-                <p className="mt-0.5 text-caption text-gray-500">
+                <p className="mt-0.5 text-body-sm text-gray-500">
                   {isRecordView
                     ? '완료된 회의의 회의록과 녹음/녹화 기록은 오른쪽 패널에서 확인합니다.'
                     : '선택한 회의의 상세 정보와 다음 액션은 오른쪽 패널에서 확인합니다.'}
                 </p>
               </div>
-              <span className="text-caption font-medium text-gray-500">{allMeetings.length}건</span>
+              <span className="text-body-sm font-medium text-gray-500">{allMeetings.length}건</span>
             </div>
             {allMeetings.length > 0 ? (
               <div>

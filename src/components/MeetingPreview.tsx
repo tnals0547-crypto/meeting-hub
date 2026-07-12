@@ -88,7 +88,7 @@ export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
                 <Mic className="h-4 w-4 shrink-0 text-gray-400" />
                 <div className="min-w-0">
                   <p className="truncate text-body-sm font-medium text-gray-900">{records?.recording.title ?? '녹음 기록'}</p>
-                  <p className="text-caption text-gray-500">{records?.recording.duration ?? '-'} · {records?.recording.status === 'processing' ? '처리 중' : '확인 가능'}</p>
+                  <p className="text-body-sm text-gray-500">{records?.recording.duration ?? '-'} · {records?.recording.status === 'processing' ? '처리 중' : '확인 가능'}</p>
                 </div>
               </div>
               <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-caption font-medium text-gray-600">녹음 기록</span>
@@ -98,7 +98,7 @@ export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
                 <Video className="h-4 w-4 shrink-0 text-gray-400" />
                 <div className="min-w-0">
                   <p className="truncate text-body-sm font-medium text-gray-900">{records?.video.title ?? '화상회의 녹화'}</p>
-                  <p className="text-caption text-gray-500">{records?.video.duration ?? '-'} · {records?.video.status === 'processing' ? '처리 중' : '확인 가능'}</p>
+                  <p className="text-body-sm text-gray-500">{records?.video.duration ?? '-'} · {records?.video.status === 'processing' ? '처리 중' : '확인 가능'}</p>
                 </div>
               </div>
               <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-caption font-medium text-gray-600">영상</span>
@@ -186,7 +186,7 @@ export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
         </div>
 
         <div className="mt-4 border-t border-gray-100 pt-4">
-          <p className="text-caption text-gray-500 mb-2">응답 현황</p>
+          <p className="text-body-sm text-gray-500 mb-2">응답 현황</p>
           <div className="flex gap-2">
             <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-2 py-1 text-caption font-medium text-success">
               <CheckCircle className="h-3.5 w-3.5" />{approved}
@@ -227,23 +227,23 @@ export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
       </div>
 
       <div className="mt-3">
-        <p className="text-caption text-gray-500 mb-2">응답 현황</p>
+        <p className="text-body-sm text-gray-500 mb-2">응답 현황</p>
         <div className="flex gap-0.5 overflow-hidden rounded-full h-2">
-          <div className="h-full rounded-full bg-gray-700 transition-all" style={{ width: `${(approved / total) * 100}%` }} />
+          <div className="h-full rounded-full bg-info transition-all" style={{ width: `${(approved / total) * 100}%` }} />
           {declined > 0 && <div className="h-full rounded-full bg-gray-400 transition-all" style={{ width: `${(declined / total) * 100}%` }} />}
           {pending > 0 && <div className="h-full rounded-full bg-gray-200 transition-all" style={{ width: `${(pending / total) * 100}%` }} />}
         </div>
         <div className="mt-1.5 flex gap-3">
-          <span className="inline-flex items-center gap-1 text-caption text-success">
+          <span className="inline-flex items-center gap-1 text-body-sm text-success">
             <CheckCircle className="h-3.5 w-3.5" />{approved} 승인
           </span>
           {declined > 0 && (
-            <span className="inline-flex items-center gap-1 text-caption text-danger">
+            <span className="inline-flex items-center gap-1 text-body-sm text-danger">
               <XCircle className="h-3.5 w-3.5" />{declined} 불참
             </span>
           )}
           {pending > 0 && (
-            <span className="inline-flex items-center gap-1 text-caption text-gray-400">
+            <span className="inline-flex items-center gap-1 text-body-sm text-gray-400">
               <HelpCircle className="h-3.5 w-3.5" />{pending} 미응답
             </span>
           )}
@@ -252,7 +252,7 @@ export default function MeetingPreview({ meeting }: MeetingPreviewProps) {
 
       {hasDeclinedRequired && meeting.status === 'response_complete' && (
         <div className="mt-3 rounded-lg border border-l-4 border-gray-200 border-l-warning bg-gray-50 p-3">
-          <p className="text-caption font-medium text-gray-700">
+          <p className="text-body-sm font-medium text-gray-700">
             필수 참석자가 불참했습니다. 대체 참석자를 선택해주세요.
           </p>
         </div>

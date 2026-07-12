@@ -101,7 +101,7 @@ export default function DynamicMeetingPage({ id }: { id: string }) {
     <div className="rounded-xl border border-l-4 border-gray-200 border-l-success bg-white p-5">
       <div className="flex items-center gap-2">
         <Calendar className="h-4 w-4 text-gray-400" />
-        <p className="text-caption font-semibold text-gray-700">선택된 시간</p>
+        <p className="text-body-sm font-semibold text-gray-700">선택된 시간</p>
       </div>
       <p className="mt-2 text-heading-s font-bold text-gray-900">
         {formatDate(meeting.confirmedTimeSlot.date)}{' '}

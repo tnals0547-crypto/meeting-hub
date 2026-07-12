@@ -33,9 +33,14 @@ interface MeetingEvent extends CalendarEvent {
   requiredMembers: TeamMember[]
   optionalMembers: TeamMember[]
   duration: MeetingDuration
+  customDurationMinutes?: number
   candidateStartDate: string
   candidateEndDate: string
   participantResponses: { name: string; status: string }[]
+}
+
+function isMeetingEvent(event: CalendarEvent | MeetingEvent | null | undefined): event is MeetingEvent {
+  return Boolean(event && 'isMeeting' in event && event.isMeeting)
 }
 
 const WEEKDAY_NAMES = ['월', '화', '수', '목', '금', '토', '일']
@@ -177,6 +182,61 @@ function eventOverlapsSlot(event: CalendarEvent, date: string, startTime: string
   return timeToMinutes(startTime) < timeToMinutes(event.endTime) && timeToMinutes(endTime) > timeToMinutes(event.startTime)
 }
 
+function getDisplayInterval(event: CalendarEvent, dragState: DragState | null, resizeState: ResizeState | null) {
+  const start = timeToMinutes(event.startTime)
+  const end = timeToMinutes(event.endTime)
+  if (dragState?.eventId === event.id) {
+    const duration = dragState.originEnd - dragState.originStart
+    return { start: dragState.currentStart, end: dragState.currentStart + duration }
+  }
+  if (resizeState?.eventId === event.id) {
+    return { start, end: resizeState.currentEnd }
+  }
+  return { start, end }
+}
+
+function getEventLayouts(
+  events: CalendarEvent[],
+  dragState: DragState | null,
+  resizeState: ResizeState | null,
+) {
+  const intervals = events
+    .map((event) => ({ event, ...getDisplayInterval(event, dragState, resizeState) }))
+    .sort((a, b) => a.start - b.start || a.end - b.end)
+  const layouts = new Map<string, { lane: number; laneCount: number }>()
+
+  let group: typeof intervals = []
+  let groupEnd = -1
+
+  function flushGroup() {
+    if (group.length === 0) return
+    const laneEnds: number[] = []
+    const assigned = group.map((item) => {
+      const lane = laneEnds.findIndex((end) => item.start >= end)
+      const nextLane = lane === -1 ? laneEnds.length : lane
+      laneEnds[nextLane] = item.end
+      return { id: item.event.id, lane: nextLane }
+    })
+    const laneCount = Math.max(1, laneEnds.length)
+    for (const item of assigned) {
+      layouts.set(item.id, { lane: item.lane, laneCount })
+    }
+    group = []
+    groupEnd = -1
+  }
+
+  for (const item of intervals) {
+    if (group.length > 0 && item.start >= groupEnd) {
+      flushGroup()
+    }
+    group.push(item)
+    groupEnd = Math.max(groupEnd, item.end)
+  }
+  flushGroup()
+
+  return layouts
+}
+
 const MOCK_WEEK_DAYS = getWeekDays(getCalendarBaseDate())
 
 const MOCK_EVENTS: (CalendarEvent | MeetingEvent)[] = [
@@ -242,10 +302,6 @@ function EventTimeBlock({
   )
 }
 
-function isMeetingEvent(event: CalendarEvent): event is MeetingEvent {
-  return 'isMeeting' in event && (event as MeetingEvent).isMeeting === true
-}
-
 function EventDetailPanel({ event, onClose, onEdit }: { event: CalendarEvent; onClose: () => void; onEdit: () => void }) {
   return (
     <div className="flex h-full flex-col">
@@ -293,7 +349,7 @@ function EventDetailPanel({ event, onClose, onEdit }: { event: CalendarEvent; on
             <hr className="my-4 border-gray-100" />
             <div className="space-y-4">
               <div>
-                <h4 className="text-caption font-semibold text-gray-500 uppercase tracking-wider">참석자</h4>
+                <h4 className="text-body-sm font-semibold text-gray-500 uppercase tracking-wider">참석자</h4>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {event.requiredMembers.map((m) => (
                     <span key={m.id} className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-caption font-medium text-gray-700">
@@ -310,7 +366,7 @@ function EventDetailPanel({ event, onClose, onEdit }: { event: CalendarEvent; on
               </div>
 
               <div>
-                <h4 className="text-caption font-semibold text-gray-500 uppercase tracking-wider">참석 현황</h4>
+                <h4 className="text-body-sm font-semibold text-gray-500 uppercase tracking-wider">참석 현황</h4>
                 <div className="mt-2 space-y-1.5">
                   {event.participantResponses.map((p, i) => {
                     const icon = p.status === 'approved' ? <CheckCircle className="h-3.5 w-3.5 text-success" />
@@ -320,7 +376,7 @@ function EventDetailPanel({ event, onClose, onEdit }: { event: CalendarEvent; on
                     return (
                       <div key={i} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2">
                         <span className="text-body-sm text-gray-900">{p.name}</span>
-                        <span className="inline-flex items-center gap-1 text-caption text-gray-500">{icon}{label}</span>
+                        <span className="inline-flex items-center gap-1 text-body-sm text-gray-500">{icon}{label}</span>
                       </div>
                     )
                   })}
@@ -328,7 +384,7 @@ function EventDetailPanel({ event, onClose, onEdit }: { event: CalendarEvent; on
               </div>
 
               <div className="rounded-lg border border-l-4 border-gray-200 border-l-warning bg-gray-50 px-4 py-3">
-                <p className="text-caption font-medium text-gray-700">다음 액션</p>
+                <p className="text-body-sm font-medium text-gray-700">다음 액션</p>
                 <p className="mt-0.5 text-body-sm text-gray-600">참석 요청을 보내고 응답을 기다리고 있어요.</p>
               </div>
             </div>
@@ -366,7 +422,12 @@ function EventFormPanel({
 
   const [requiredMembers, setRequiredMembers] = useState<TeamMember[]>([])
   const [optionalMembers, setOptionalMembers] = useState<TeamMember[]>([])
-  const [meetingDuration, setMeetingDuration] = useState<MeetingDuration>('60m')
+  const [meetingDuration, setMeetingDuration] = useState<MeetingDuration>(
+    isMeetingEvent(editEvent) ? editEvent.duration : '60m',
+  )
+  const [customDurationMinutes, setCustomDurationMinutes] = useState(
+    isMeetingEvent(editEvent) ? editEvent.customDurationMinutes ?? 45 : 45,
+  )
   const [candidateStartDate, setCandidateStartDate] = useState(getTodayStr())
   const [candidateEndDate, setCandidateEndDate] = useState(() => {
     const d = new Date()
@@ -397,6 +458,7 @@ function EventFormPanel({
         requiredMembers,
         optionalMembers,
         duration: meetingDuration,
+        customDurationMinutes: meetingDuration === 'custom' ? customDurationMinutes : undefined,
         candidateStartDate,
         candidateEndDate,
         participantResponses: [
@@ -408,13 +470,14 @@ function EventFormPanel({
     } else {
       onSave(base)
     }
-  }, [title, type, eventDate, startTime, endTime, location, description, isRecurring, myStatus, isMeeting, requiredMembers, optionalMembers, meetingDuration, candidateStartDate, candidateEndDate, editEvent, onSave])
+  }, [title, type, eventDate, startTime, endTime, location, description, isRecurring, myStatus, isMeeting, requiredMembers, optionalMembers, meetingDuration, customDurationMinutes, candidateStartDate, candidateEndDate, editEvent, onSave])
 
   const DURATION_OPTIONS: { value: MeetingDuration; label: string }[] = [
     { value: '30m', label: '30분' },
     { value: '60m', label: '1시간' },
     { value: '90m', label: '1시간 30분' },
     { value: '120m', label: '2시간' },
+    { value: 'custom', label: '기타' },
   ]
 
   const MY_STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -435,14 +498,14 @@ function EventFormPanel({
 
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
         <div>
-          <label className="text-caption font-semibold text-gray-500 uppercase tracking-wider">일정 유형</label>
+          <label className="text-body-sm font-semibold text-gray-500">일정 유형</label>
           <div className="mt-1.5 flex flex-wrap gap-2">
             {(Object.keys(EVENT_TYPE_LABEL) as EventType[]).map((et) => (
               <button
                 key={et}
                 onClick={() => setType(et)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-caption font-medium transition-colors ${
-                  type === et ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                className={`inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1.5 text-body-sm font-medium transition-colors ${
+                  type === et ? 'border-[#9AA8B8] bg-gray-50 text-gray-900' : 'border-transparent bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 <span className={`inline-block h-1.5 w-1.5 rounded-full ${typeDot[et]}`} />
@@ -453,7 +516,7 @@ function EventFormPanel({
         </div>
 
         <div>
-          <label className="text-caption font-semibold text-gray-500 uppercase tracking-wider">제목</label>
+          <label className="text-body-sm font-semibold text-gray-500">제목</label>
           <input
             type="text"
             value={title}
@@ -465,7 +528,7 @@ function EventFormPanel({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-caption font-semibold text-gray-500 uppercase tracking-wider">날짜</label>
+            <label className="text-body-sm font-semibold text-gray-500">날짜</label>
             <input
               type="date"
               value={eventDate}
@@ -477,7 +540,7 @@ function EventFormPanel({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-caption font-semibold text-gray-500 uppercase tracking-wider">시작</label>
+            <label className="text-body-sm font-semibold text-gray-500">시작</label>
             <input
               type="time"
               value={startTime}
@@ -486,7 +549,7 @@ function EventFormPanel({
             />
           </div>
           <div>
-            <label className="text-caption font-semibold text-gray-500 uppercase tracking-wider">종료</label>
+            <label className="text-body-sm font-semibold text-gray-500">종료</label>
             <input
               type="time"
               value={endTime}
@@ -509,7 +572,7 @@ function EventFormPanel({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-caption font-semibold text-gray-500 uppercase tracking-wider">내 상태</label>
+            <label className="text-body-sm font-semibold text-gray-500">내 상태</label>
             <select
               value={myStatus}
               onChange={(e) => setMyStatus(e.target.value as typeof myStatus)}
@@ -523,7 +586,7 @@ function EventFormPanel({
         </div>
 
         <div>
-          <label className="text-caption font-semibold text-gray-500 uppercase tracking-wider">장소</label>
+          <label className="text-body-sm font-semibold text-gray-500">장소</label>
           <input
             type="text"
             value={location}
@@ -534,7 +597,7 @@ function EventFormPanel({
         </div>
 
         <div>
-          <label className="text-caption font-semibold text-gray-500 uppercase tracking-wider">설명</label>
+          <label className="text-body-sm font-semibold text-gray-500">설명</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -570,40 +633,60 @@ function EventFormPanel({
               />
 
               <div>
-                <label className="text-caption font-semibold text-gray-500 uppercase tracking-wider">회의 길이</label>
-                <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+                <label className="text-body-sm font-semibold text-gray-500">회의 길이</label>
+                <div className="mt-1.5 grid grid-cols-[repeat(auto-fit,minmax(80px,1fr))] gap-2">
                   {DURATION_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
                       onClick={() => setMeetingDuration(opt.value)}
-                      className={`rounded-[8px] border px-2 py-2 text-caption font-medium transition-colors ${
-                        meetingDuration === opt.value ? 'border-black bg-gray-50 text-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      className={`flex h-11 min-w-20 items-center justify-center whitespace-nowrap rounded-[8px] border px-4 py-2 text-body-sm font-medium transition-colors ${
+                        meetingDuration === opt.value ? 'border-[#9AA8B8] bg-gray-50 text-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-300'
                       }`}
                     >
                       {opt.label}
                     </button>
                   ))}
                 </div>
+                {meetingDuration === 'custom' && (
+                  <div className="mt-3 max-w-[180px]">
+                    <label className="text-body-sm font-semibold text-gray-500">직접 입력</label>
+                    <div className="mt-1.5 flex items-center gap-2 rounded-[8px] border border-gray-200 px-3 py-2.5 focus-within:border-[#9AA8B8]">
+                      <input
+                        type="number"
+                        min={10}
+                        max={240}
+                        step={5}
+                        value={customDurationMinutes}
+                        onChange={(e) => setCustomDurationMinutes(Math.min(Math.max(Number(e.target.value) || 10, 10), 240))}
+                        className="w-full bg-transparent text-body-sm text-gray-900 outline-none"
+                      />
+                      <span className="shrink-0 text-body-sm text-gray-500">분</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-caption font-semibold text-gray-500 uppercase tracking-wider">후보 시작</label>
-                  <input
-                    type="date"
-                    value={candidateStartDate}
-                    onChange={(e) => setCandidateStartDate(e.target.value)}
-                    className="mt-1.5 w-full rounded-[8px] border border-gray-200 px-3 py-2 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
-                  />
-                </div>
-                <div>
-                  <label className="text-caption font-semibold text-gray-500 uppercase tracking-wider">후보 종료</label>
-                  <input
-                    type="date"
-                    value={candidateEndDate}
-                    onChange={(e) => setCandidateEndDate(e.target.value)}
-                    className="mt-1.5 w-full rounded-[8px] border border-gray-200 px-3 py-2 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
-                  />
+              <div>
+                <p className="text-body-sm font-semibold text-gray-500">회의 가능 기간</p>
+                <div className="mt-1.5 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-body-sm font-semibold text-gray-500">시작일</label>
+                    <input
+                      type="date"
+                      value={candidateStartDate}
+                      onChange={(e) => setCandidateStartDate(e.target.value)}
+                      className="mt-1.5 w-full rounded-[8px] border border-gray-200 px-3 py-2 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-body-sm font-semibold text-gray-500">종료일</label>
+                    <input
+                      type="date"
+                      value={candidateEndDate}
+                      onChange={(e) => setCandidateEndDate(e.target.value)}
+                      className="mt-1.5 w-full rounded-[8px] border border-gray-200 px-3 py-2 text-body-sm text-gray-900 outline-none transition-colors focus:border-black"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -880,6 +963,7 @@ function CalendarPageContent() {
     if (selectedEvent) {
       setEditEvent(selectedEvent)
       setShowForm(true)
+      setSelectedEvent(null)
     }
   }, [selectedEvent])
 
@@ -932,7 +1016,7 @@ function CalendarPageContent() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
         <div className="flex items-center gap-3">
-          <button onClick={goToday} className="rounded-[8px] border border-gray-200 px-3 py-1.5 text-caption font-medium text-gray-700 hover:bg-gray-50">
+          <button onClick={goToday} className="rounded-[8px] border border-gray-200 px-3 py-1.5 text-body-sm font-medium text-gray-700 hover:bg-gray-50">
             오늘
           </button>
           <div className="flex items-center gap-1">
@@ -945,12 +1029,12 @@ function CalendarPageContent() {
           </div>
           <div>
             <h1 className="text-title font-semibold text-gray-900">{pageModeLabel}</h1>
-            <p className="text-caption text-gray-500">{monthLabel}</p>
+            <p className="text-body-sm text-gray-500">{monthLabel}</p>
           </div>
         </div>
         <button
           onClick={handleAddEvent}
-          className="inline-flex items-center gap-1.5 rounded-[8px] bg-gray-900 px-4 py-2 text-body-sm font-medium text-white transition-colors hover:bg-gray-800"
+          className="inline-flex items-center gap-1.5 rounded-[8px] bg-info px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
         >
           <Plus className="h-4 w-4" />
           일정 추가
@@ -967,7 +1051,7 @@ function CalendarPageContent() {
               <div className="border-r border-gray-200 px-2 py-2" />
               {weekDays.map((day) => (
                 <div key={day.dateStr} className={`border-r border-gray-100 px-2 py-2 text-center last:border-r-0 ${day.isToday ? 'bg-white' : ''}`}>
-                  <span className="text-caption font-medium text-gray-500">{day.dayName}</span>
+                  <span className="text-body-sm font-medium text-gray-500">{day.dayName}</span>
                   <span className={`ml-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full text-title font-semibold ${
                     day.isToday ? 'bg-gray-900 text-white' : 'text-gray-900'
                   }`}>
@@ -986,7 +1070,7 @@ function CalendarPageContent() {
                     className="absolute inset-x-0 border-t border-gray-100 px-2 pt-1 text-right"
                     style={{ top: (hour - 9) * GRID_HOUR_HEIGHT }}
                   >
-                    <span className="text-caption text-gray-400">{formatTimeDisplay(hour, 0)}</span>
+                    <span className="text-body-sm text-gray-400">{formatTimeDisplay(hour, 0)}</span>
                   </div>
                 ))}
               </div>
@@ -1002,6 +1086,7 @@ function CalendarPageContent() {
                     ? [draggedEvent]
                     : []),
                 ]
+                const eventLayouts = getEventLayouts(renderEvents, dragState, resizeState)
                 return (
                   <div
                     key={day.dateStr}
@@ -1037,12 +1122,22 @@ function CalendarPageContent() {
                       const previewTime = isDragging || isResizing
                         ? `${minutesToTime(previewStart)} ~ ${minutesToTime(previewEnd)}`
                         : undefined
+                      const layout = eventLayouts.get(evt.id) ?? { lane: 0, laneCount: 1 }
+                      const horizontalStyle = layout.laneCount > 1
+                        ? {
+                            left: `calc(${(layout.lane / layout.laneCount) * 100}% + 4px)`,
+                            width: `calc(${100 / layout.laneCount}% - 6px)`,
+                          }
+                        : {
+                            left: 4,
+                            right: 4,
+                          }
 
                       return (
                         <div
                           key={evt.id}
-                          className="absolute left-1 right-1"
-                          style={{ top, height }}
+                          className="absolute"
+                          style={{ top, height, ...horizontalStyle }}
                         >
                           <EventTimeBlock
                             event={evt}
@@ -1065,7 +1160,7 @@ function CalendarPageContent() {
               <div className="border-t border-gray-100 bg-white px-6 py-10 text-center">
                 <CalendarDays className="mx-auto h-8 w-8 text-gray-300" />
                 <p className="mt-2 text-body-sm font-medium text-gray-700">{pageModeLabel}이 없습니다</p>
-                <p className="mt-1 text-caption text-gray-500">다른 필터를 선택하거나 새 일정을 추가해보세요.</p>
+                <p className="mt-1 text-body-sm text-gray-500">다른 필터를 선택하거나 새 일정을 추가해보세요.</p>
               </div>
             )}
           </div>
@@ -1082,11 +1177,11 @@ function CalendarPageContent() {
                     }`}>
                       {day.dayNum}
                     </span>
-                    <span className="text-caption font-medium text-gray-500">{day.dayName}요일</span>
-                    {day.isToday && <span className="text-caption font-medium text-gray-600">오늘</span>}
+                    <span className="text-body-sm font-medium text-gray-500">{day.dayName}요일</span>
+                    {day.isToday && <span className="text-body-sm font-medium text-gray-600">오늘</span>}
                   </div>
                   {dayEvents.length === 0 ? (
-                    <p className="pl-9 text-caption text-gray-400">
+                    <p className="pl-9 text-body-sm text-gray-400">
                       {calendarFilter === 'all' ? '일정 없음' : `${FILTER_LABEL[calendarFilter]} 없음`}
                     </p>
                   ) : (
@@ -1100,7 +1195,7 @@ function CalendarPageContent() {
                           }`}
                         >
                           <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${typeDot[evt.type]}`} />
-                          <span className="text-caption text-gray-500 tabular-nums w-10 shrink-0">{evt.startTime.slice(0, 5)}</span>
+                          <span className="text-body-sm text-gray-500 tabular-nums w-10 shrink-0">{evt.startTime.slice(0, 5)}</span>
                           <span className="text-body-sm font-medium text-gray-900 truncate">{evt.title}</span>
                         </button>
                       ))}
@@ -1139,22 +1234,54 @@ function CalendarPageContent() {
           )}
         </div>
 
-        {/* Right detail panel (desktop) / bottom panel (mobile) */}
+        {/* Right detail panel (desktop) / bottom sheet (mobile) */}
         {selectedEvent && (
-          <div className="border-l border-gray-200 bg-white lg:w-[360px] lg:shrink-0">
-            <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} onEdit={handleEditEvent} />
-          </div>
+          <>
+            <div className="hidden border-l border-gray-200 bg-white lg:block lg:w-[360px] lg:shrink-0">
+              <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} onEdit={handleEditEvent} />
+            </div>
+            <div className="fixed inset-0 z-50 flex items-end bg-gray-900/35 lg:hidden" role="dialog" aria-modal="true">
+              <button
+                type="button"
+                aria-label="일정 상세 닫기"
+                onClick={() => setSelectedEvent(null)}
+                className="absolute inset-0"
+              />
+              <div className="relative flex h-[78dvh] max-h-[calc(100dvh-24px)] w-full flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl">
+                <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-gray-200" />
+                <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} onEdit={handleEditEvent} />
+              </div>
+            </div>
+          </>
         )}
 
         {/* Event form slide-over */}
         {showForm && (
-          <div className="border-l border-gray-200 bg-white lg:w-[400px] lg:shrink-0">
-            <EventFormPanel
-              onClose={() => { setShowForm(false); setEditEvent(null) }}
-              onSave={handleSaveEvent}
-              editEvent={editEvent}
-            />
-          </div>
+          <>
+            <div className="hidden border-l border-gray-200 bg-white lg:block lg:w-[400px] lg:shrink-0">
+              <EventFormPanel
+                onClose={() => { setShowForm(false); setEditEvent(null) }}
+                onSave={handleSaveEvent}
+                editEvent={editEvent}
+              />
+            </div>
+            <div className="fixed inset-0 z-50 flex items-end bg-gray-900/35 lg:hidden" role="dialog" aria-modal="true">
+              <button
+                type="button"
+                aria-label="일정 추가 닫기"
+                onClick={() => { setShowForm(false); setEditEvent(null) }}
+                className="absolute inset-0"
+              />
+              <div className="relative flex h-[88dvh] max-h-[calc(100dvh-24px)] w-full flex-col overflow-hidden rounded-t-[16px] bg-white shadow-2xl">
+                <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-gray-200" />
+                <EventFormPanel
+                  onClose={() => { setShowForm(false); setEditEvent(null) }}
+                  onSave={handleSaveEvent}
+                  editEvent={editEvent}
+                />
+              </div>
+            </div>
+          </>
         )}
 
         {/* Empty state (when no selection and no form) */}

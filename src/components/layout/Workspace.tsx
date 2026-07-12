@@ -13,8 +13,8 @@ const scheduleItems = [
 ]
 
 const recentMails = [
-  { from: '김철수', title: '수율 개선 회의 참석 요청' },
-  { from: '최리더', title: 'Q2 회고 - 대체 참석자 선택 안내' },
+  { from: '김민수', title: '수율 개선 회의 참석 요청' },
+  { from: '정서연', title: 'Q2 회고 - 대체 참석자 선택 안내' },
 ]
 
 const statusBadge: Record<string, string> = {
@@ -114,7 +114,7 @@ export default function Workspace({
                     <span
                       className={`inline-block h-4 w-0.5 shrink-0 rounded-full ${item.bar}`}
                     />
-                    <span className="w-9 text-caption font-medium text-gray-500">
+                    <span className="w-9 text-body-sm font-medium text-gray-500">
                       {item.time}
                     </span>
                     <span className="text-body-sm text-gray-900">{item.title}</span>
@@ -227,7 +227,7 @@ export default function Workspace({
                     className="rounded-lg px-2.5 py-2 text-body-sm transition-colors hover:bg-gray-50"
                   >
                     <p className="truncate text-gray-900">{mail.title}</p>
-                    <p className="text-caption text-gray-500">{mail.from}</p>
+                    <p className="text-body-sm text-gray-500">{mail.from}</p>
                   </div>
                 ))}
               </div>

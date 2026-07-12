@@ -64,14 +64,14 @@ function ResponseSummary({ meeting }: { meeting: Meeting }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <Users className="h-4 w-4 text-gray-400" />
-          <span className="text-caption font-medium text-gray-500">참석자</span>
+          <span className="text-body-sm font-medium text-gray-500">참석자</span>
         </div>
-        <span className="text-caption text-gray-400">{total}명</span>
+        <span className="text-body-sm text-gray-400">{total}명</span>
       </div>
 
       <div className="flex gap-1.5">
         <div
-          className={`h-2 rounded-full transition-all ${hasRequiredDeclined ? 'bg-warning' : 'bg-gray-700'}`}
+          className={`h-2 rounded-full transition-all ${hasRequiredDeclined ? 'bg-warning' : 'bg-info'}`}
           style={{ width: `${(approved / total) * 100}%` }}
         />
         {declined > 0 && (
@@ -89,18 +89,18 @@ function ResponseSummary({ meeting }: { meeting: Meeting }) {
       </div>
 
       <div className="flex gap-3">
-        <span className="inline-flex items-center gap-1 text-caption text-success">
+        <span className="inline-flex items-center gap-1 text-body-sm text-success">
           <CheckCircle className="h-3.5 w-3.5" />
           {approved}
         </span>
         {declined > 0 && (
-          <span className="inline-flex items-center gap-1 text-caption text-danger">
+          <span className="inline-flex items-center gap-1 text-body-sm text-danger">
             <XCircle className="h-3.5 w-3.5" />
             {declined}
           </span>
         )}
         {pending > 0 && (
-          <span className="inline-flex items-center gap-1 text-caption text-gray-400">
+          <span className="inline-flex items-center gap-1 text-body-sm text-gray-400">
             <HelpCircle className="h-3.5 w-3.5" />
             {pending}
           </span>
@@ -219,7 +219,7 @@ export default async function MeetingProgressPage({
                   <h2 className="text-title font-semibold text-gray-900">녹음 기록</h2>
                 </div>
                 <p className="mt-3 text-body-sm font-medium text-gray-900">{records?.recording.title ?? '녹음 기록'}</p>
-                <p className="mt-1 text-caption text-gray-500">
+                <p className="mt-1 text-body-sm text-gray-500">
                   {records?.recording.duration ?? '-'} · {records?.recording.status === 'processing' ? '처리 중' : '확인 가능'}
                 </p>
               </div>
@@ -229,7 +229,7 @@ export default async function MeetingProgressPage({
                   <h2 className="text-title font-semibold text-gray-900">화상회의 녹화</h2>
                 </div>
                 <p className="mt-3 text-body-sm font-medium text-gray-900">{records?.video.title ?? '화상회의 녹화'}</p>
-                <p className="mt-1 text-caption text-gray-500">
+                <p className="mt-1 text-body-sm text-gray-500">
                   {records?.video.duration ?? '-'} · {records?.video.status === 'processing' ? '처리 중' : '확인 가능'}
                 </p>
               </div>
@@ -309,7 +309,7 @@ export default async function MeetingProgressPage({
     <section className="rounded-xl border border-l-4 border-gray-200 border-l-warning bg-white p-4">
       <div className="flex items-start gap-3">
         <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100">
-          <span className="text-caption font-bold text-warning">!</span>
+          <span className="text-body-sm font-bold text-warning">!</span>
         </div>
         <div>
           <h3 className="text-title font-semibold text-gray-900">
@@ -331,7 +331,7 @@ export default async function MeetingProgressPage({
           <p className="text-body-sm font-medium text-gray-900">
             {responseChoice === 'approved' ? '참석으로 응답했습니다.' : '불참으로 응답했습니다.'}
           </p>
-          <p className="mt-1 text-caption text-gray-600">
+          <p className="mt-1 text-body-sm text-gray-600">
             응답 현황과 참석자 목록에 바로 반영되었습니다.
           </p>
         </div>

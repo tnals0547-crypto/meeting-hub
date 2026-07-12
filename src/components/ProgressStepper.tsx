@@ -51,7 +51,7 @@ export default function ProgressStepper({ status, myRole, myResponseStatus }: Pr
       <div className="relative w-full max-w-[360px]">
         <div className="absolute left-[12.5%] right-[12.5%] top-4 grid grid-cols-3 gap-8" aria-hidden="true">
           {steps.slice(0, -1).map((step, i) => (
-            <div key={step.label} className={`h-px ${i < current ? 'bg-gray-900' : 'bg-gray-200'}`} />
+            <div key={step.label} className={`h-px ${i < current ? 'bg-info' : 'bg-gray-200'}`} />
           ))}
         </div>
 
@@ -61,9 +61,9 @@ export default function ProgressStepper({ status, myRole, myResponseStatus }: Pr
           const isActive = i === current
           return (
             <div key={step.label} className="flex min-w-0 flex-col items-center gap-1 text-center">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-caption font-semibold transition-all ${
-                  isCompleted ? 'bg-gray-900 text-white'
-                    : isActive ? 'bg-gray-700 text-white ring-4 ring-gray-200'
+                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-body-sm font-semibold transition-all ${
+                  isCompleted ? 'bg-info text-white'
+                    : isActive ? 'bg-info text-white ring-4 ring-info-bg'
                     : 'bg-gray-100 text-gray-400'
                 }`}>
                   {isCompleted ? <Check className="h-4 w-4" /> : isActive ? <Dot className="h-6 w-6" /> : i + 1}

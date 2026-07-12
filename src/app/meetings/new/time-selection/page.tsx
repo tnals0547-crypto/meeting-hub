@@ -26,6 +26,7 @@ interface NewMeetingForm {
   noticeMessage?: string
   meetingType: string
   duration: MeetingDuration
+  customDurationMinutes?: number
   requiredMembers: { id: string; name: string; department: string; role: string }[]
   optionalMembers: { id: string; name: string; department: string; role: string }[]
   startDate: string
@@ -84,6 +85,7 @@ export default function TimeSelectionPage() {
         formData.duration,
         requiredIds,
         optionalIds,
+        { customDurationMinutes: formData.customDurationMinutes },
       )
 
       const viable = slots.filter(

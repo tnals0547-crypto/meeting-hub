@@ -59,7 +59,7 @@ export default function InboxPage() {
                     <StatusBadge status={meeting.status} />
                   </div>
                   <p className="mt-1 line-clamp-1 text-title text-gray-600">{meeting.description}</p>
-                  <div className="mt-2 flex items-center gap-3 text-caption text-gray-600">
+                  <div className="mt-2 flex items-center gap-3 text-body-sm text-gray-600">
                     <span>{meeting.organizerName} · 주최</span>
                     <span>참석자 {meeting.participants.length}명</span>
                     {myParticipant && (

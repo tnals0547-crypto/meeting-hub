@@ -18,7 +18,6 @@ const CALENDAR_ITEMS = [
   { label: '집중 업무', href: '/calendar?filter=focus' },
   { label: '외부 일정', href: '/calendar?filter=external' },
   { label: '부재', href: '/calendar?filter=vacation' },
-  { label: '가능 시간', href: '/meetings/new' },
 ]
 
 const MEETINGS_ITEMS = [
@@ -110,12 +109,12 @@ function LNBContent() {
   return (
     <nav className="hidden w-60 shrink-0 border-r border-gray-200 bg-white lg:flex lg:flex-col">
       <div className="border-b border-gray-100 px-5 py-4">
-        <p className="text-caption font-medium text-gray-400">SECTION</p>
+        <p className="text-body-sm font-medium text-gray-400">SECTION</p>
         <h2 className="mt-1 text-heading-s font-semibold text-gray-900">{meta.title}</h2>
       </div>
 
       <div className="border-b border-gray-100 px-4 py-4">
-        <p className="px-1 text-caption font-semibold text-gray-500">요약</p>
+        <p className="px-1 text-body-sm font-semibold text-gray-500">요약</p>
         <div className="mt-2 space-y-1">
           {meta.summary.map((item) => (
             <div key={item.label} className="flex items-center justify-between rounded-lg px-2 py-1.5">
@@ -127,7 +126,7 @@ function LNBContent() {
       </div>
 
       <div className="flex flex-col gap-0.5 px-3 py-4">
-        <p className="mb-2 px-2 text-caption font-semibold text-gray-500">필터</p>
+        <p className="mb-2 px-2 text-body-sm font-semibold text-gray-500">필터</p>
         {items.map((item) => {
           const active = matchesCurrent(item.href, pathname, searchParams)
           return (
@@ -137,7 +136,7 @@ function LNBContent() {
               scroll={false}
               className={`rounded-lg border px-3 py-2 text-body-sm transition-colors ${
                 active
-                  ? 'border-gray-400 bg-gray-50 font-semibold text-gray-900'
+                  ? 'border-[#9AA8B8] bg-gray-50 font-semibold text-gray-900'
                   : 'border-transparent font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
